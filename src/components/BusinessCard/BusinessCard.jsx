@@ -10,7 +10,7 @@ const BusinessCard = ({ data, templateId, scale = 1 }) => {
     color: style.textColor,
     fontFamily: style.fontFamily,
     transform: `scale(${scale})`,
-    transformOrigin: scale < 1 ? 'center center' : 'top left'
+    transformOrigin: '0 0'
   };
 
   const renderModernLayout = () => (
@@ -132,7 +132,7 @@ const BusinessCard = ({ data, templateId, scale = 1 }) => {
   };
 
   return (
-    <div className="business-card-wrapper">
+    <div className="business-card-wrapper" style={{ width: `${350 * scale}px`, height: `${200 * scale}px` }}>
       {renderLayout()}
     </div>
   );

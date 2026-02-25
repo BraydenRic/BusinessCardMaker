@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBusinessCards } from '../hooks/useBusinessCards';
@@ -18,6 +18,8 @@ const Editor = () => {
   const [cardData, setCardData] = useState(defaultCardData);
   const [selectedTemplate, setSelectedTemplate] = useState(templateParam || 'modern');
   const [saving, setSaving] = useState(false);
+  const [previewScale, setPreviewScale] = useState(1.0);
+  const previewRef = useRef(null);
 
   // Sample data for template previews
   const sampleData = {
@@ -28,6 +30,18 @@ const Editor = () => {
     phone: '+1 (555) 123-4567',
     website: 'www.example.com'
   };
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (previewRef.current) {
+        const containerWidth = previewRef.current.clientWidth - 64; // subtract padding
+        setPreviewScale(Math.min(1.0, containerWidth / 350));
+      }
+    };
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -201,8 +215,8 @@ const Editor = () => {
         <div className="editor-preview">
           <div className="preview-sticky">
             <h3>Live Preview</h3>
-            <div className="preview-container">
-              <BusinessCard data={cardData} templateId={selectedTemplate} scale={1.0} />
+            <div className="preview-container" ref={previewRef}>
+              <BusinessCard data={cardData} templateId={selectedTemplate} scale={previewScale} />
             </div>
             <p className="preview-info">
               Standard business card size: 3.5" × 2"

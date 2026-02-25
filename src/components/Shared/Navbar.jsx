@@ -49,6 +49,7 @@ const Navbar = () => {
                   src={user.photoURL}
                   alt={user.displayName}
                   className="user-avatar"
+                  referrerPolicy="no-referrer"
                 />
                 <span className="user-name">{user.displayName}</span>
               </div>
