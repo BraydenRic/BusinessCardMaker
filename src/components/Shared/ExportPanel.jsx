@@ -314,7 +314,7 @@ const ExportPanel = () => {
       </div>
 
       <div className="export-info">
-        <p>💡 Download creates a standalone HTML file you can host anywhere</p>
+        <p>Download creates a standalone HTML file you can host anywhere</p>
       </div>
     </div>
   );

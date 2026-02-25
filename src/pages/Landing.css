@@ -329,6 +329,10 @@
     gap: 2rem;
   }
 
+  .template-item {
+    overflow: hidden;
+  }
+
   .hero h1 {
     font-size: 2.25rem;
   }
@@ -390,5 +394,15 @@
   .hero-buttons {
     width: 100%;
     flex-direction: column;
+  }
+
+  .template-item {
+    padding: 1rem;
+    overflow: hidden;
+  }
+
+  .template-preview {
+    overflow: hidden;
+    border-radius: 6px;
   }
 }
