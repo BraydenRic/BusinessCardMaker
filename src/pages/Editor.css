@@ -1,7 +1,6 @@
 .editor {
   min-height: 100vh;
   background: var(--bg-primary);
-  overflow-x: hidden;
 }
 
 /* Header */
@@ -304,6 +303,20 @@
   }
 }
 
+@media (max-width: 640px) {
+  .template-option {
+    overflow: hidden;
+  }
+
+  .template-mini-preview .business-card-wrapper {
+    zoom: 0.48;
+  }
+
+  .template-mini-preview {
+    min-height: 60px;
+  }
+}
+
 @media (max-width: 480px) {
   .editor-header {
     padding: 1rem 1.25rem;
@@ -343,16 +356,6 @@
 
   .template-option {
     padding: 0.75rem 0.5rem;
-    overflow: hidden;
-  }
-
-  /* Scale mini preview cards down to fit narrow cells on mobile */
-  .template-mini-preview .business-card-wrapper {
-    zoom: 0.48;
-  }
-
-  .template-mini-preview {
-    min-height: 60px;
   }
 
   .preview-sticky {
