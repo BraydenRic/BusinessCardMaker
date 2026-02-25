@@ -19,6 +19,16 @@ const Editor = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(templateParam || 'modern');
   const [saving, setSaving] = useState(false);
 
+  // Sample data for template previews
+  const sampleData = {
+    name: 'John Doe',
+    title: 'Senior Developer',
+    company: 'Tech Solutions Inc.',
+    email: 'john@example.com',
+    phone: '+1 (555) 123-4567',
+    website: 'www.example.com'
+  };
+
   useEffect(() => {
     if (!user) {
       navigate('/');
@@ -175,7 +185,7 @@ const Editor = () => {
                   onClick={() => setSelectedTemplate(template.id)}
                 >
                   <div className="template-mini-preview">
-                    <BusinessCard data={cardData} templateId={template.id} scale={0.4} />
+                    <BusinessCard data={cardData} templateId={template.id} scale={0.75} />
                   </div>
                   <p>{template.name}</p>
                   {selectedTemplate === template.id && (

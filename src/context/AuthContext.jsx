@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }) => {
           width: '50px',
           height: '50px',
           border: '4px solid #1e293b',
-          borderTopColor: '#6366f1',
+          borderTopColor: '#3b82f6',
           borderRadius: '50%',
           animation: 'spin 1s linear infinite'
         }}></div>

@@ -53,7 +53,7 @@ const Landing = () => {
         <div className="hero-content">
           <h1>Create Professional Business Cards</h1>
           <p className="hero-subtitle">
-            Design, customize, and save stunning business cards with Google authentication
+            Design, customize, and save stunning business cards
           </p>
           <div className="hero-buttons">
             <button onClick={handleGetStarted} className="cta-button primary">

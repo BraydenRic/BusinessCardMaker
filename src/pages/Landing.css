@@ -160,7 +160,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(59, 130, 246, 0.1);
   border-radius: 12px;
   color: var(--accent-primary);
 }
@@ -241,7 +241,7 @@
 .template-item:hover {
   border-color: var(--accent-primary);
   transform: translateY(-5px);
-  box-shadow: var(--shadow-xl), 0 0 30px rgba(99, 102, 241, 0.2);
+  box-shadow: var(--shadow-xl), 0 0 30px rgba(59, 130, 246, 0.2);
 }
 
 .template-preview {

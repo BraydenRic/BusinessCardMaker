@@ -10,7 +10,7 @@ const BusinessCard = ({ data, templateId, scale = 1 }) => {
     color: style.textColor,
     fontFamily: style.fontFamily,
     transform: `scale(${scale})`,
-    transformOrigin: 'top left'
+    transformOrigin: scale < 1 ? 'center center' : 'top left'
   };
 
   const renderModernLayout = () => (

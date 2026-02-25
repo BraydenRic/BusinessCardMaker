@@ -7,8 +7,8 @@ export const templates = [
     preview: '/templates/modern-preview.png',
     style: {
       backgroundColor: '#1a1d27',
-      primaryColor: '#6366f1',
-      secondaryColor: '#8b5cf6',
+      primaryColor: '#3b82f6',
+      secondaryColor: '#60a5fa',
       textColor: '#f1f5f9',
       accentColor: '#94a3b8',
       fontFamily: "'Inter', sans-serif",

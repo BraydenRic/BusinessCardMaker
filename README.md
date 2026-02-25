@@ -2,7 +2,7 @@
 
 A professional, full-stack React application for creating and managing stunning business cards. Features Google authentication, cloud storage, 6 unique templates, and print-ready exports with a sleek dark theme.
 
-## ✨ Features
+## Features
 
 ### Core Functionality
 - **Google Authentication**: Secure sign-in with Firebase Auth
@@ -19,7 +19,7 @@ A professional, full-stack React application for creating and managing stunning 
 - **Mobile Responsive**: Works perfectly on all devices
 - **Smooth Animations**: Carefully crafted micro-interactions
 
-## 🚀 React & Full-Stack Concepts
+## React & Full-Stack Concepts
 
 This project demonstrates:
 
@@ -32,13 +32,13 @@ This project demonstrates:
 - **State Management**: Complex form handling
 - **Async Operations**: Loading states, error handling
 
-## 📋 Prerequisites
+## Prerequisites
 
 1. **Node.js** (v16+)
 2. **Firebase Account** (free tier works)
 3. **Google Account** (for testing auth)
 
-## 🛠️ Setup Instructions
+## Setup Instructions
 
 ### 1. Install Dependencies
 
@@ -63,7 +63,7 @@ npm run dev
 
 Visit `http://localhost:5173`
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
@@ -82,7 +82,7 @@ src/
 └── App.jsx                  # Router setup
 ```
 
-## 🎨 Available Templates
+## Available Templates
 
 1. **Modern Professional** - Gradient accents, clean layout
 2. **Minimal Clean** - Black & white simplicity
@@ -91,13 +91,13 @@ src/
 5. **Tech Blue** - Developer-friendly monospace
 6. **Creative Colorful** - Playful and artistic
 
-## 🔐 Security
+## Security
 
 - Firestore rules restrict users to their own data
 - Google OAuth for secure authentication
 - No API keys exposed in client code
 
-## 📱 How to Use
+## How to Use
 
 1. **Sign In**: Click "Sign in with Google" on landing page
 2. **Choose Template**: Browse and select from 6 templates
@@ -106,7 +106,7 @@ src/
 5. **Print**: Export print-ready cards anytime
 6. **Manage**: View, edit, or delete from dashboard
 
-## 🖨️ Printing Your Cards
+## Printing Your Cards
 
 1. Open a saved card from dashboard
 2. Click "Print" button
@@ -116,7 +116,7 @@ src/
    - Scale: 100%
    - Multiple cards per page supported
 
-## 🌐 Technologies
+## Technologies
 
 - **Frontend**: React 19, React Router
 - **Build Tool**: Vite 7
@@ -125,7 +125,7 @@ src/
 - **Authentication**: Google OAuth 2.0
 - **Database**: Cloud Firestore
 
-## 🎓 Learning Outcomes
+## Learning Outcomes
 
 This project teaches:
 - Full-stack React development
@@ -136,7 +136,7 @@ This project teaches:
 - Secure client-side apps
 - Modern React patterns (hooks, context, router)
 
-## 🚧 Future Enhancements
+## Future Enhancements
 
 - [ ] QR code generation
 - [ ] Multiple card designs per user

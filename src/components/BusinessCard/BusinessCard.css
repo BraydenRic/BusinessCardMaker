@@ -240,7 +240,7 @@
 }
 
 .card-tech .company {
-  margin: 0 0 0.6rem 0;
+  margin: 0 0 0.5rem 0;
   font-size: 0.75rem;
   line-height: 1.3;
 }
@@ -248,11 +248,11 @@
 .card-tech .tech-contacts {
   font-family: 'Courier New', monospace;
   font-size: 0.7rem;
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .card-tech .tech-contacts p {
-  margin: 0.2rem 0;
+  margin: 0.15rem 0;
 }
 
 /* Creative Layout */
@@ -310,12 +310,86 @@
 
 /* Print styles */
 @media print {
+  .business-card-wrapper,
+  .business-card-wrapper *,
+  .business-card-wrapper > div,
+  .card-modern,
+  .card-minimal,
+  .card-bold,
+  .card-elegant,
+  .card-tech,
+  .card-creative,
+  .card-divider,
+  .elegant-line,
+  .bold-gradient,
+  .minimal-divider {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
   .business-card-wrapper {
     page-break-inside: avoid;
     box-shadow: none !important;
+    width: 3.5in !important;
+    height: 2in !important;
   }
 
   .business-card-wrapper > div {
-    box-shadow: 0 0 1px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    border-radius: 8px !important;
+    width: 3.5in !important;
+    height: 2in !important;
+    overflow: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Ensure dividers print - use border instead of background */
+  .card-divider {
+    height: 0 !important;
+    border-top: 3px solid #2563eb !important;
+    background: none !important;
+    opacity: 1 !important;
+    display: block !important;
+    margin: 0.6rem 0 !important;
+  }
+
+  .elegant-line {
+    background: currentColor !important;
+    opacity: 1 !important;
+  }
+
+  .minimal-divider {
+    background: currentColor !important;
+    opacity: 1 !important;
+  }
+
+  /* Reduce padding/spacing slightly for print to fit content */
+  .card-modern,
+  .card-minimal,
+  .card-bold,
+  .card-elegant,
+  .card-tech,
+  .card-creative {
+    padding: 1rem 1.25rem !important;
+  }
+
+  .card-body,
+  .minimal-right,
+  .bold-contacts,
+  .elegant-contacts,
+  .tech-contacts,
+  .creative-contacts {
+    font-size: 0.65rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .contact-item,
+  .card-body p,
+  .tech-contacts p,
+  .elegant-contacts p,
+  .creative-contacts p {
+    margin: 0.1rem 0 !important;
   }
 }

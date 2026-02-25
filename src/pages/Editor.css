@@ -114,7 +114,7 @@
   outline: none;
   border-color: var(--accent-primary);
   background: var(--bg-tertiary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   transform: translateY(-1px);
 }
 
@@ -144,16 +144,43 @@
 
 .template-option.selected {
   border-color: var(--accent-primary);
-  background: rgba(99, 102, 241, 0.05);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: rgba(59, 130, 246, 0.05);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .template-mini-preview {
   margin-bottom: 0.75rem;
   display: flex;
   justify-content: center;
-  overflow: hidden;
+  align-items: center;
   border-radius: 6px;
+  min-height: 80px;
+  width: 100%;
+}
+
+.template-mini-preview .business-card-wrapper,
+.template-mini-preview .business-card-wrapper > div {
+  transform-origin: center center !important;
+}
+
+/* Override parent centering for cards */
+.template-mini-preview * {
+  text-align: left;
+}
+
+/* Elegant template should stay centered */
+.template-mini-preview .card-elegant,
+.template-mini-preview .card-elegant * {
+  text-align: center;
+}
+
+/* Ensure dividers show up in mini previews */
+.template-mini-preview .card-divider,
+.template-mini-preview .elegant-line,
+.template-mini-preview .minimal-divider {
+  display: block !important;
+  opacity: 1 !important;
+  min-height: 2px !important;
 }
 
 .template-option p {
@@ -163,7 +190,7 @@
   font-weight: 500;
 }
 
-.template-option.selected p {
+.template-option.selected > p {
   color: var(--accent-primary);
 }
 

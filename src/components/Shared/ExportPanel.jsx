@@ -44,13 +44,13 @@ const ExportPanel = () => {
       text-transform: uppercase;
       letter-spacing: 0.15em;
       margin-bottom: 1.5rem;
-      color: #6366f1;
+      color: #3b82f6;
       font-weight: 600;
       display: inline-block;
       padding: 0.5rem 1.25rem;
-      background: rgba(99, 102, 241, 0.1);
+      background: rgba(59, 130, 246, 0.1);
       border-radius: 20px;
-      border: 1px solid rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.2);
     }
 
     .product-name {
@@ -58,7 +58,7 @@ const ExportPanel = () => {
       font-weight: 800;
       margin: 1.5rem 0;
       line-height: 1.1;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -77,7 +77,7 @@ const ExportPanel = () => {
       font-size: 3rem;
       font-weight: 800;
       margin: 2rem 0;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -122,7 +122,7 @@ const ExportPanel = () => {
       content: '';
       width: 4px;
       height: 28px;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
       border-radius: 2px;
     }
 
@@ -154,12 +154,12 @@ const ExportPanel = () => {
       content: "✓";
       position: absolute;
       left: 1rem;
-      color: #6366f1;
+      color: #3b82f6;
       font-weight: bold;
       font-size: 1.25rem;
       width: 28px;
       height: 28px;
-      background: rgba(99, 102, 241, 0.1);
+      background: rgba(59, 130, 246, 0.1);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -173,7 +173,7 @@ const ExportPanel = () => {
     .contact-button {
       display: inline-block;
       padding: 1.125rem 2.5rem;
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
       color: white;
       text-decoration: none;
       border-radius: 12px;
