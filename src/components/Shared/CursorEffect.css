@@ -1,0 +1,95 @@
+.cursor-effect-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+/* Main watercolor brush effect */
+.cursor-glow {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  margin-left: -250px;
+  margin-top: -250px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.25) 0%,
+    rgba(139, 92, 246, 0.18) 25%,
+    rgba(99, 102, 241, 0.12) 50%,
+    transparent 70%
+  );
+  filter: blur(80px);
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  will-change: transform;
+  mix-blend-mode: screen;
+}
+
+/* Ambient background layers for depth */
+.cursor-ambient {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0.6;
+  animation: ambientFloat 25s ease-in-out infinite;
+}
+
+.cursor-ambient-1 {
+  background: radial-gradient(
+    circle at 20% 30%,
+    rgba(99, 102, 241, 0.06) 0%,
+    transparent 50%
+  );
+  animation-delay: 0s;
+}
+
+.cursor-ambient-2 {
+  background: radial-gradient(
+    circle at 80% 70%,
+    rgba(139, 92, 246, 0.06) 0%,
+    transparent 50%
+  );
+  animation-delay: -12s;
+}
+
+@keyframes ambientFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -30px) scale(1.1);
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.9);
+  }
+}
+
+/* Enhance effect on mouse movement */
+@media (hover: hover) and (pointer: fine) {
+  .cursor-glow {
+    mix-blend-mode: screen;
+  }
+}
+
+/* Disable on mobile/touch devices */
+@media (hover: none) or (pointer: coarse) {
+  .cursor-glow {
+    display: none;
+  }
+
+  .cursor-ambient {
+    opacity: 0.2;
+  }
+}
+
+/* Performance optimization */
+.cursor-effect-container {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
