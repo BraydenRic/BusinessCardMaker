@@ -97,5 +97,8 @@ export const defaultCardData = {
   address: '',
   linkedIn: '',
   customFields: [],
-  template: 'modern'
+  template: 'modern',
+  backLogo: '',
+  backTagline: '',
+  backBgColor: ''
 };

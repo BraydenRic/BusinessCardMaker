@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBusinessCards } from '../hooks/useBusinessCards';
 import BusinessCard from '../components/BusinessCard/BusinessCard';
+import CardBack from '../components/BusinessCard/CardBack';
 import { templates, defaultCardData } from '../components/BusinessCard/templates';
 import './Editor.css';
 
@@ -19,6 +20,7 @@ const Editor = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(templateParam || 'modern');
   const [saving, setSaving] = useState(false);
   const [previewScale, setPreviewScale] = useState(1.0);
+  const [previewTab, setPreviewTab] = useState('front');
   const previewRef = useRef(null);
 
   // Sample data for template previews
@@ -209,14 +211,112 @@ const Editor = () => {
               ))}
             </div>
           </div>
+
+          {/* Card Back Section */}
+          <div className="form-section">
+            <h3>Card Back</h3>
+
+            <div className="form-group">
+              <label htmlFor="backLogo">Logo (optional)</label>
+              {cardData.backLogo && (
+                <div className="back-logo-preview">
+                  <img src={cardData.backLogo} alt="Logo preview" />
+                  <button
+                    type="button"
+                    className="btn-remove-logo"
+                    onClick={() => handleInputChange('backLogo', '')}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+              <input
+                type="file"
+                id="backLogo"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  if (file.size > 200 * 1024) {
+                    alert('Logo must be under 200 KB. Please resize your image.');
+                    e.target.value = '';
+                    return;
+                  }
+                  const reader = new FileReader();
+                  reader.onload = (ev) => handleInputChange('backLogo', ev.target.result);
+                  reader.readAsDataURL(file);
+                }}
+              />
+              <p className="form-hint">PNG, JPG, SVG — max 200 KB</p>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="backTagline">Tagline / Short Text</label>
+              <input
+                type="text"
+                id="backTagline"
+                value={cardData.backTagline || ''}
+                onChange={(e) => handleInputChange('backTagline', e.target.value)}
+                placeholder="Building the future."
+                maxLength={80}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="backBgColor">Background Color</label>
+              <div className="color-picker-row">
+                <input
+                  type="color"
+                  id="backBgColor"
+                  value={
+                    cardData.backBgColor ||
+                    (templates.find(t => t.id === selectedTemplate)?.style.backgroundColor ?? '#1a1d27')
+                  }
+                  onChange={(e) => handleInputChange('backBgColor', e.target.value)}
+                />
+                <span className="color-value">
+                  {cardData.backBgColor || 'Template default'}
+                </span>
+                {cardData.backBgColor && (
+                  <button
+                    type="button"
+                    className="btn-reset-color"
+                    onClick={() => handleInputChange('backBgColor', '')}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Preview Section */}
         <div className="editor-preview">
           <div className="preview-sticky">
             <h3>Live Preview</h3>
+            <div className="preview-tabs">
+              <button
+                type="button"
+                className={`preview-tab ${previewTab === 'front' ? 'active' : ''}`}
+                onClick={() => setPreviewTab('front')}
+              >
+                Front
+              </button>
+              <button
+                type="button"
+                className={`preview-tab ${previewTab === 'back' ? 'active' : ''}`}
+                onClick={() => setPreviewTab('back')}
+              >
+                Back
+              </button>
+            </div>
             <div className="preview-container" ref={previewRef}>
-              <BusinessCard data={cardData} templateId={selectedTemplate} scale={previewScale} />
+              {previewTab === 'front' ? (
+                <BusinessCard data={cardData} templateId={selectedTemplate} scale={previewScale} />
+              ) : (
+                <CardBack data={cardData} templateId={selectedTemplate} scale={previewScale} />
+              )}
             </div>
             <p className="preview-info">
               Standard business card size: 3.5" × 2"

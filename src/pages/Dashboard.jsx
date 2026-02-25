@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBusinessCards } from '../hooks/useBusinessCards';
 import BusinessCard from '../components/BusinessCard/BusinessCard';
+import CardFlipModal from '../components/BusinessCard/CardFlipModal';
 import { templates } from '../components/BusinessCard/templates';
 import './Dashboard.css';
 
@@ -9,6 +11,7 @@ const Dashboard = () => {
   const { user, logout } = useAuth();
   const { cards, loading, deleteCard } = useBusinessCards();
   const navigate = useNavigate();
+  const [previewCard, setPreviewCard] = useState(null);
 
   const handleCreateNew = () => {
     navigate('/editor');
@@ -134,7 +137,14 @@ const Dashboard = () => {
           <div className="cards-grid">
             {cards.map((card) => (
               <div key={card.id} className="card-item">
-                <div className="card-preview-wrapper">
+                <div
+                  className="card-preview-wrapper"
+                  onClick={() => setPreviewCard(card)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Preview ${card.name}'s card in 3D`}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setPreviewCard(card); }}
+                >
                   <BusinessCard data={card} templateId={card.template} />
                 </div>
                 <div className="card-actions">
@@ -174,6 +184,13 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {previewCard && (
+        <CardFlipModal
+          card={previewCard}
+          onClose={() => setPreviewCard(null)}
+        />
+      )}
     </div>
   );
 };

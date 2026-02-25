@@ -1,0 +1,146 @@
+.card-flip-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: overlayFadeIn 0.25s ease-out;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.card-flip-modal-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 2.5rem;
+  animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalSlideIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+.card-flip-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: none;
+  padding: 0;
+  transition: background 0.2s ease;
+}
+
+.card-flip-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: none;
+  box-shadow: none;
+}
+
+.card-flip-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  margin: 0;
+  user-select: none;
+}
+
+.card-flip-indicator {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  user-select: none;
+  transition: opacity 0.3s ease;
+}
+
+/* 3D scene */
+.card-flip-scene {
+  perspective: 700px;
+  perspective-origin: 50% 50%;
+  width: 350px;
+  height: 200px;
+  cursor: grab;
+}
+
+.card-flip-scene:active {
+  cursor: grabbing;
+}
+
+.card-flip-pivot {
+  width: 350px;
+  height: 200px;
+  transform-style: preserve-3d;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.card-flip-card {
+  width: 350px;
+  height: 200px;
+  transform-style: preserve-3d;
+  transition: transform 0.55s ease-in-out;
+  position: relative;
+}
+
+.card-flip-card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.card-flip-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 350px;
+  height: 200px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  pointer-events: none;
+}
+
+.card-flip-face--front {
+  transform: rotateY(0deg);
+}
+
+.card-flip-face--back {
+  transform: rotateY(180deg);
+}
+
+/* Suppress hover lift inside 3D scene */
+.card-flip-scene .business-card-wrapper > div:hover {
+  transform: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Mobile: scale down scene to fit */
+@media (max-width: 480px) {
+  .card-flip-scene {
+    transform: scale(0.8);
+    transform-origin: top center;
+  }
+
+  .card-flip-modal-content {
+    padding: 2.5rem 1rem;
+  }
+}

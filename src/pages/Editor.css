@@ -294,3 +294,119 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Card Back form section ── */
+
+.form-group input[type="file"] {
+  padding: 0.5rem 0;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  cursor: pointer;
+  width: auto;
+}
+
+.form-hint {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.back-logo-preview {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+}
+
+.back-logo-preview img {
+  max-height: 48px;
+  max-width: 120px;
+  object-fit: contain;
+}
+
+.btn-remove-logo,
+.btn-reset-color {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8rem;
+  background: transparent;
+  border: 1px solid var(--border-secondary);
+  color: var(--text-muted);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: none;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-remove-logo:hover,
+.btn-reset-color:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  transform: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.color-picker-row input[type="color"] {
+  width: 48px;
+  height: 40px;
+  padding: 2px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-primary);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.color-value {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-family: 'Courier New', monospace;
+  flex: 1;
+}
+
+/* ── Preview tab switcher ── */
+
+.preview-tabs {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-primary);
+  width: fit-content;
+  margin: 0 auto 1rem auto;
+}
+
+.preview-tab {
+  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+  box-shadow: none;
+}
+
+.preview-tab:hover {
+  background: var(--bg-hover);
+  transform: none;
+  box-shadow: none;
+}
+
+.preview-tab.active {
+  background: var(--accent-primary);
+  color: white;
+}

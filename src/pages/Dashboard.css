@@ -196,6 +196,32 @@
   margin-bottom: 1.5rem;
   display: flex;
   justify-content: center;
+  position: relative;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.card-preview-wrapper::after {
+  content: '3D Preview';
+  position: absolute;
+  inset: 0;
+  background: rgba(37, 99, 235, 0);
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  pointer-events: none;
+}
+
+.card-preview-wrapper:hover::after {
+  background: rgba(37, 99, 235, 0.15);
+  color: var(--accent-secondary);
 }
 
 /* Card Actions */
