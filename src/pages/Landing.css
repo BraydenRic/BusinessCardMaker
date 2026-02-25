@@ -320,6 +320,15 @@
 
   .templates-grid {
     grid-template-columns: 1fr;
+    max-width: 500px;
+  }
+
+  .template-item {
+    overflow: hidden;
+  }
+
+  .template-preview {
+    overflow: hidden;
   }
 }
 
