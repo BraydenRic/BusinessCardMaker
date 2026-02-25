@@ -158,11 +158,6 @@
   width: 100%;
 }
 
-.template-mini-preview .business-card-wrapper,
-.template-mini-preview .business-card-wrapper > div {
-  transform-origin: center center !important;
-}
-
 /* Override parent centering for cards */
 .template-mini-preview * {
   text-align: left;
