@@ -370,13 +370,33 @@
 /* ── Card Back form section ── */
 
 .form-group input[type="file"] {
-  padding: 0.5rem 0;
+  padding: 0;
   background: transparent;
   border: none;
   color: var(--text-secondary);
   font-size: 0.875rem;
   cursor: pointer;
   width: auto;
+}
+
+.form-group input[type="file"]::file-selector-button {
+  padding: 0.5rem 1.25rem;
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-secondary);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  margin-right: 0.875rem;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.form-group input[type="file"]::file-selector-button:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  background: var(--bg-hover);
 }
 
 .form-hint {
