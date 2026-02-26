@@ -6,7 +6,7 @@ const BusinessCard = ({ data, templateId, scale = 1 }) => {
   const style = template.style;
 
   const cardStyle = {
-    backgroundColor: style.backgroundColor,
+    backgroundColor: data.cardBgColor || style.backgroundColor,
     color: style.textColor,
     fontFamily: style.fontFamily,
     transform: `scale(${scale})`,

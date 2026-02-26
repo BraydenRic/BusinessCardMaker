@@ -56,8 +56,8 @@ const Dashboard = () => {
     // Build back HTML from card data + template styles
     const template = templates.find(t => t.id === card.template) || templates[0];
     const style = template.style;
-    const resolvedBg = (card.backBgColor && card.backBgColor !== '')
-      ? card.backBgColor
+    const resolvedBg = (card.cardBgColor && card.cardBgColor !== '')
+      ? card.cardBgColor
       : style.backgroundColor;
 
     const backHTML = `

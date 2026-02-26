@@ -6,8 +6,8 @@ const CardBack = ({ data, templateId, scale = 1 }) => {
   const template = templates.find(t => t.id === templateId) || templates[0];
   const style = template.style;
 
-  const resolvedBg = (data.backBgColor && data.backBgColor !== '')
-    ? data.backBgColor
+  const resolvedBg = (data.cardBgColor && data.cardBgColor !== '')
+    ? data.cardBgColor
     : style.backgroundColor;
 
   const innerStyle = {

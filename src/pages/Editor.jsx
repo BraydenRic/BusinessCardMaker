@@ -131,7 +131,7 @@ const Editor = () => {
                   onClick={() => setSelectedTemplate(template.id)}
                 >
                   <div className="template-mini-preview">
-                    <BusinessCard data={cardData} templateId={template.id} scale={0.75} />
+                    <BusinessCard data={{ ...cardData, cardBgColor: '' }} templateId={template.id} scale={0.75} />
                   </div>
                   <p>{template.name}</p>
                   {selectedTemplate === template.id && (
@@ -139,6 +139,33 @@ const Editor = () => {
                   )}
                 </div>
               ))}
+            </div>
+
+            <div className="form-group" style={{ marginTop: '1.25rem', marginBottom: 0 }}>
+              <label htmlFor="cardBgColor">Background Color</label>
+              <div className="color-picker-row">
+                <input
+                  type="color"
+                  id="cardBgColor"
+                  value={
+                    cardData.cardBgColor ||
+                    (templates.find(t => t.id === selectedTemplate)?.style.backgroundColor ?? '#1a1d27')
+                  }
+                  onChange={(e) => handleInputChange('cardBgColor', e.target.value)}
+                />
+                <span className="color-value">
+                  {cardData.cardBgColor || 'Template default'}
+                </span>
+                {cardData.cardBgColor && (
+                  <button
+                    type="button"
+                    className="btn-reset-color"
+                    onClick={() => handleInputChange('cardBgColor', '')}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -262,32 +289,6 @@ const Editor = () => {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="backBgColor">Background Color</label>
-              <div className="color-picker-row">
-                <input
-                  type="color"
-                  id="backBgColor"
-                  value={
-                    cardData.backBgColor ||
-                    (templates.find(t => t.id === selectedTemplate)?.style.backgroundColor ?? '#1a1d27')
-                  }
-                  onChange={(e) => handleInputChange('backBgColor', e.target.value)}
-                />
-                <span className="color-value">
-                  {cardData.backBgColor || 'Template default'}
-                </span>
-                {cardData.backBgColor && (
-                  <button
-                    type="button"
-                    className="btn-reset-color"
-                    onClick={() => handleInputChange('backBgColor', '')}
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-            </div>
           </div>
         </div>
 
