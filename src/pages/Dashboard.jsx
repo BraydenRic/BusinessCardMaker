@@ -27,9 +27,17 @@ const Dashboard = () => {
         await deleteCard(cardId);
       } catch (error) {
         console.error('Error deleting card:', error);
+        alert('Failed to delete card. Please try again.');
       }
     }
   };
+
+  const escapeHtml = (str) => String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
   const handlePrintCard = (card, e) => {
     // Grab the actual rendered front card from the DOM
@@ -57,16 +65,20 @@ const Dashboard = () => {
         <div class="card-back-inner" style="background-color:${resolvedBg};color:${style.textColor};font-family:${style.fontFamily};">
           <div class="card-back-accent" style="border-color:${style.primaryColor};"></div>
           ${card.backLogo ? `<img src="${card.backLogo}" class="card-back-logo" alt="Logo">` : ''}
-          ${card.backTagline ? `<p class="card-back-tagline" style="color:${style.primaryColor};">${card.backTagline}</p>` : ''}
+          ${card.backTagline ? `<p class="card-back-tagline" style="color:${style.primaryColor};">${escapeHtml(card.backTagline)}</p>` : ''}
           ${!card.backLogo && !card.backTagline ? `<p class="card-back-placeholder" style="color:${style.accentColor};">Card Back</p>` : ''}
         </div>
       </div>`;
 
     const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Popup blocked — please allow popups for this site to print.');
+      return;
+    }
     printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
-  <title>Print - ${card.name}</title>
+  <title>Print - ${escapeHtml(card.name)}</title>
   <style>
     .page-break { page-break-after: always; }
     @page { size: 3.5in 2in; margin: 0; }

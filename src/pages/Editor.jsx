@@ -120,8 +120,30 @@ const Editor = () => {
       <div className="editor-content">
         {/* Form Section */}
         <div className="editor-form">
+          {/* Template Selection */}
           <div className="form-section">
-            <h3>Card Information</h3>
+            <h3>Choose Template</h3>
+            <div className="template-selector">
+              {templates.map((template) => (
+                <div
+                  key={template.id}
+                  className={`template-option ${selectedTemplate === template.id ? 'selected' : ''}`}
+                  onClick={() => setSelectedTemplate(template.id)}
+                >
+                  <div className="template-mini-preview">
+                    <BusinessCard data={cardData} templateId={template.id} scale={0.75} />
+                  </div>
+                  <p>{template.name}</p>
+                  {selectedTemplate === template.id && (
+                    <div className="selected-indicator">✓</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h3>Front Side</h3>
 
             <div className="form-group">
               <label htmlFor="name">Full Name *</label>
@@ -187,28 +209,6 @@ const Editor = () => {
                 onChange={(e) => handleInputChange('website', e.target.value)}
                 placeholder="www.example.com"
               />
-            </div>
-          </div>
-
-          {/* Template Selection */}
-          <div className="form-section">
-            <h3>Choose Template</h3>
-            <div className="template-selector">
-              {templates.map((template) => (
-                <div
-                  key={template.id}
-                  className={`template-option ${selectedTemplate === template.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedTemplate(template.id)}
-                >
-                  <div className="template-mini-preview">
-                    <BusinessCard data={cardData} templateId={template.id} scale={0.75} />
-                  </div>
-                  <p>{template.name}</p>
-                  {selectedTemplate === template.id && (
-                    <div className="selected-indicator">✓</div>
-                  )}
-                </div>
-              ))}
             </div>
           </div>
 

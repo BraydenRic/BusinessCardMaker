@@ -45,13 +45,15 @@ const Navbar = () => {
               </Link>
               <div className="navbar-divider"></div>
               <div className="user-info">
-                <img
-                  src={user.photoURL}
-                  alt={user.displayName}
-                  className="user-avatar"
-                  referrerPolicy="no-referrer"
-                />
-                <span className="user-name">{user.displayName}</span>
+                {user.photoURL && (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName ?? 'User'}
+                    className="user-avatar"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <span className="user-name">{user.displayName ?? user.email}</span>
               </div>
               <button onClick={handleLogout} className="nav-button logout">
                 Logout
