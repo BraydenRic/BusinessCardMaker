@@ -31,58 +31,136 @@ const Dashboard = () => {
     }
   };
 
-  const handlePrintCard = (card) => {
-    // Create a print-friendly version
-    const printWindow = window.open('', '_blank');
-    const template = templates.find(t => t.id === card.template);
-    const style = template?.style || templates[0].style;
+  const handlePrintCard = (card, e) => {
+    // Grab the actual rendered front card from the DOM
+    const cardItem = e.currentTarget.closest('.card-item');
+    const cardWrapper = cardItem?.querySelector('.business-card-wrapper');
+    if (!cardWrapper) return;
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Print Business Card - ${card.name}</title>
-        <style>
-          @page {
-            size: 3.5in 2in;
-            margin: 0;
-          }
-          body {
-            margin: 0;
-            padding: 0;
-            font-family: ${style.fontFamily};
-          }
-          .card {
-            width: 3.5in;
-            height: 2in;
-            background-color: ${style.backgroundColor};
-            color: ${style.textColor};
-            padding: 0.5in;
-            box-sizing: border-box;
-          }
-          h2 { color: ${style.primaryColor}; margin: 0; }
-          p { margin: 0.1in 0; font-size: 10pt; }
-          .title { color: ${style.secondaryColor}; }
-        </style>
-      </head>
-      <body>
-        <div class="card">
-          <h2>${card.name}</h2>
-          <p class="title">${card.title}</p>
-          ${card.company ? `<p>${card.company}</p>` : ''}
-          ${card.email ? `<p>${card.email}</p>` : ''}
-          ${card.phone ? `<p>${card.phone}</p>` : ''}
-          ${card.website ? `<p>${card.website}</p>` : ''}
+    // Clone front and strip the preview scale transform
+    const clone = cardWrapper.cloneNode(true);
+    const innerDiv = clone.querySelector(':scope > div');
+    if (innerDiv) {
+      innerDiv.style.transform = 'none';
+      innerDiv.style.transformOrigin = 'top left';
+    }
+
+    // Build back HTML from card data + template styles
+    const template = templates.find(t => t.id === card.template) || templates[0];
+    const style = template.style;
+    const resolvedBg = (card.backBgColor && card.backBgColor !== '')
+      ? card.backBgColor
+      : style.backgroundColor;
+
+    const backHTML = `
+      <div class="business-card-wrapper">
+        <div class="card-back-inner" style="background-color:${resolvedBg};color:${style.textColor};font-family:${style.fontFamily};">
+          <div class="card-back-accent" style="border-color:${style.primaryColor};"></div>
+          ${card.backLogo ? `<img src="${card.backLogo}" class="card-back-logo" alt="Logo">` : ''}
+          ${card.backTagline ? `<p class="card-back-tagline" style="color:${style.primaryColor};">${card.backTagline}</p>` : ''}
+          ${!card.backLogo && !card.backTagline ? `<p class="card-back-placeholder" style="color:${style.accentColor};">Card Back</p>` : ''}
         </div>
-        <script>
-          window.onload = () => {
-            window.print();
-            window.onafterprint = () => window.close();
-          };
-        </script>
-      </body>
-      </html>
-    `);
+      </div>`;
+
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Print - ${card.name}</title>
+  <style>
+    .page-break { page-break-after: always; }
+    @page { size: 3.5in 2in; margin: 0; }
+    *, *::before, *::after {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+      color-adjust: exact !important;
+      box-sizing: border-box;
+    }
+    @media print {
+      *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+    }
+    html, body { margin: 0; padding: 0; width: 3.5in; background: white; }
+
+    .business-card-wrapper { width: 3.5in !important; height: 2in !important; display: block; }
+    .business-card-wrapper > div { width: 3.5in !important; height: 2in !important; border-radius: 0 !important; overflow: hidden; transform: none !important; }
+
+    /* Modern */
+    .card-modern { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; justify-content: space-between; }
+    .card-modern .card-header h2 { margin: 0; font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
+    .card-modern .card-header p { margin: 0.35rem 0 0 0; font-size: 0.85rem; line-height: 1.3; }
+    .card-modern .card-divider { height: 3px; margin: 0.6rem 0; border-radius: 2px; }
+    .card-modern .card-body { font-size: 0.75rem; line-height: 1.4; }
+    .card-modern .company { font-weight: 600; margin-bottom: 0.4rem; }
+    .card-modern .contact-item { margin: 0.2rem 0; opacity: 0.95; }
+
+    /* Minimal */
+    .card-minimal { padding: 1.25rem 1.5rem; display: grid; grid-template-columns: 1.2fr auto 1fr; gap: 1.25rem; align-items: center; }
+    .card-minimal .minimal-left h2 { margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.2; }
+    .card-minimal .minimal-left p { margin: 0.3rem 0; font-size: 0.8rem; line-height: 1.3; }
+    .card-minimal .minimal-divider { width: 2px; height: 80%; }
+    .card-minimal .minimal-right { font-size: 0.75rem; text-align: right; line-height: 1.4; }
+    .card-minimal .minimal-right p { margin: 0.25rem 0; }
+
+    /* Bold */
+    .card-bold { display: flex; flex-direction: column; }
+    .card-bold .bold-gradient { padding: 1rem 1.5rem; color: white; flex-shrink: 0; }
+    .card-bold .bold-gradient h2 { margin: 0; font-size: 1.4rem; font-weight: 800; line-height: 1.2; }
+    .card-bold .bold-content { padding: 0.9rem 1.5rem; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .card-bold .title { margin: 0 0 0.4rem 0; font-size: 0.85rem; font-weight: 600; }
+    .card-bold .company { margin: 0 0 0.6rem 0; font-size: 0.8rem; }
+    .card-bold .bold-contacts p { margin: 0.2rem 0; font-size: 0.75rem; }
+
+    /* Elegant */
+    .card-elegant { padding: 0.75rem; }
+    .card-elegant .elegant-border { border: 2px solid; height: 100%; padding: 1rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-sizing: border-box; }
+    .card-elegant h2 { margin: 0; font-size: 1.2rem; font-weight: 400; letter-spacing: 0.05em; line-height: 1.2; }
+    .card-elegant .elegant-line { width: 40px; height: 1px; margin: 0.5rem 0; }
+    .card-elegant .title { margin: 0 0 0.35rem 0; font-size: 0.75rem; font-style: italic; }
+    .card-elegant .company { margin: 0 0 0.5rem 0; font-size: 0.75rem; }
+    .card-elegant .elegant-contacts p { margin: 0.15rem 0; font-size: 0.65rem; }
+
+    /* Tech */
+    .card-tech { padding: 1.25rem 1.5rem; position: relative; }
+    .card-tech .tech-corner { position: absolute; top: 0; right: 0; width: 35px; height: 35px; border-right: 3px solid; border-top: 3px solid; }
+    .card-tech .tech-content { height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+    .card-tech h2 { margin: 0; font-size: 1.2rem; font-weight: 600; font-family: 'Courier New', monospace; line-height: 1.2; }
+    .card-tech .title { margin: 0.4rem 0; font-size: 0.8rem; font-family: 'Courier New', monospace; }
+    .card-tech .company { margin: 0 0 0.5rem 0; font-size: 0.75rem; }
+    .card-tech .tech-contacts { font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.5; }
+    .card-tech .tech-contacts p { margin: 0.15rem 0; }
+
+    /* Creative */
+    .card-creative { padding: 1.25rem 1.5rem; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; }
+    .card-creative .creative-blob { position: absolute; width: 100px; height: 100px; border-radius: 50%; top: -30px; right: -30px; opacity: 0.15; }
+    .card-creative .creative-content { position: relative; z-index: 1; }
+    .card-creative h2 { margin: 0; font-size: 1.35rem; font-weight: 700; line-height: 1.2; }
+    .card-creative .title { margin: 0.35rem 0 0.4rem 0; font-size: 0.85rem; }
+    .card-creative .company { margin: 0 0 0.6rem 0; font-size: 0.8rem; }
+    .card-creative .creative-contacts p { margin: 0.2rem 0; font-size: 0.75rem; }
+
+    /* Card back */
+    .card-back-inner { width: 3.5in !important; height: 2in !important; border-radius: 0 !important; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; padding: 1.5rem; box-sizing: border-box; position: relative; transform: none !important; }
+    .card-back-accent { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border-right: 2px solid; border-top: 2px solid; border-radius: 0 4px 0 0; opacity: 0.5; }
+    .card-back-logo { max-width: 120px; max-height: 60px; object-fit: contain; }
+    .card-back-tagline { font-size: 0.9rem; font-weight: 500; text-align: center; letter-spacing: 0.04em; margin: 0; max-width: 280px; line-height: 1.4; }
+    .card-back-placeholder { font-size: 0.8rem; opacity: 0.4; margin: 0; letter-spacing: 0.1em; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <div class="page-break">${clone.outerHTML}</div>
+  ${backHTML}
+  <script>
+    window.onload = function() {
+      window.print();
+      window.onafterprint = function() { window.close(); };
+    };
+  </script>
+</body>
+</html>`);
     printWindow.document.close();
   };
 
@@ -159,7 +237,7 @@ const Dashboard = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handlePrintCard(card)}
+                    onClick={(e) => handlePrintCard(card, e)}
                     className="action-btn print"
                     title="Print card"
                   >

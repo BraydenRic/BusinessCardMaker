@@ -121,58 +121,46 @@ button:focus-visible {
 
 /* Print styles */
 @media print {
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  /* Force all backgrounds/colors to print */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
 
-  body {
+  /* Prevent body min-height from creating a blank second page */
+  html, body {
+    min-height: 0 !important;
+    height: auto !important;
     background: white !important;
   }
 
-  /* Hide everything except the business card */
-  .navbar,
-  .editor-header,
-  .editor-form,
-  .preview-sticky h3,
-  .preview-info,
-  .header-actions,
-  button,
-  .dashboard-header,
-  .dashboard-actions,
-  .card-actions,
-  .empty-state,
-  .simple-particles-canvas {
-    display: none !important;
+  /* Hide everything using visibility so card children can override */
+  body * {
+    visibility: hidden !important;
   }
 
-  /* Show only the business card */
+  /* Show the card and all its contents */
+  .business-card-wrapper,
+  .business-card-wrapper * {
+    visibility: visible !important;
+  }
+
+  /* Center on the page using fixed — fixed is relative to the page,
+     not to any positioned ancestor like .editor-preview */
   .business-card-wrapper {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(1) !important;
-    page-break-inside: avoid;
-  }
-
-  .preview-container,
-  .editor-preview,
-  .preview-sticky {
-    background: transparent !important;
-    border: none !important;
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: 3.5in !important;
+    height: 2in !important;
     box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Ensure card colors print correctly */
-  .business-card-wrapper > div {
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
-  }
-
-  @page {
-    size: letter;
-    margin: 0.5in;
+    page-break-inside: avoid;
   }
 }

@@ -340,29 +340,16 @@
     border-radius: 8px !important;
     width: 3.5in !important;
     height: 2in !important;
-    overflow: visible !important;
-    display: flex !important;
-    flex-direction: column !important;
+    overflow: hidden !important;
+    transform: none !important;
   }
 
-  /* Ensure dividers print - use border instead of background */
-  .card-divider {
-    height: 0 !important;
-    border-top: 3px solid #2563eb !important;
-    background: none !important;
+  /* Dividers use inline background styles — print-color-adjust handles them */
+  .card-divider,
+  .elegant-line,
+  .minimal-divider {
     opacity: 1 !important;
     display: block !important;
-    margin: 0.6rem 0 !important;
-  }
-
-  .elegant-line {
-    background: currentColor !important;
-    opacity: 1 !important;
-  }
-
-  .minimal-divider {
-    background: currentColor !important;
-    opacity: 1 !important;
   }
 
   /* Reduce padding/spacing slightly for print to fit content */
