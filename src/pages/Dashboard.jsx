@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBusinessCards } from '../hooks/useBusinessCards';
 import BusinessCard from '../components/BusinessCard/BusinessCard';
+import CanvasPreview from '../components/Canvas/CanvasPreview';
 import CardFlipModal from '../components/BusinessCard/CardFlipModal';
 import { templates } from '../components/BusinessCard/templates';
 import './Dashboard.css';
@@ -17,8 +18,16 @@ const Dashboard = () => {
     navigate('/editor');
   };
 
-  const handleEditCard = (cardId) => {
-    navigate(`/editor?id=${cardId}`);
+  const handleCreateCanvas = () => {
+    navigate('/canvas');
+  };
+
+  const handleEditCard = (card) => {
+    if (card.type === 'canvas') {
+      navigate(`/canvas?id=${card.id}`);
+    } else {
+      navigate(`/editor?id=${card.id}`);
+    }
   };
 
   const handleDeleteCard = async (cardId) => {
@@ -53,28 +62,81 @@ const Dashboard = () => {
       innerDiv.style.transformOrigin = 'top left';
     }
 
-    // Build back HTML from card data + template styles
-    const template = templates.find(t => t.id === card.template) || templates[0];
-    const style = template.style;
-    const resolvedBg = (card.cardBgColor && card.cardBgColor !== '')
-      ? card.cardBgColor
-      : style.backgroundColor;
-
-    const backHTML = `
-      <div class="business-card-wrapper">
-        <div class="card-back-inner" style="background-color:${resolvedBg};color:${style.textColor};font-family:${style.fontFamily};">
-          <div class="card-back-accent" style="border-color:${style.primaryColor};"></div>
-          ${card.backLogo ? `<img src="${card.backLogo}" class="card-back-logo" alt="Logo">` : ''}
-          ${card.backTagline ? `<p class="card-back-tagline" style="color:${style.primaryColor};">${escapeHtml(card.backTagline)}</p>` : ''}
-          ${!card.backLogo && !card.backTagline ? `<p class="card-back-placeholder" style="color:${style.accentColor};">Card Back</p>` : ''}
-        </div>
-      </div>`;
-
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Popup blocked — please allow popups for this site to print.');
       return;
     }
+
+    // Canvas cards: print front (page 1) and back (page 2) — all styles inline
+    if (card.type === 'canvas') {
+      // Build back side HTML from card data (inline styles, same approach)
+      const backBg = card.bgColorBack || card.bgColor || '#1a1d27';
+      const backEls = card.elementsBack || [];
+      const backElsHtml = backEls.map(el => {
+        if (el.type === 'text') {
+          const boxStyle = el.width ? `width:${el.width}px;height:${el.height}px;overflow:hidden;display:block;` : '';
+          return `<span style="position:absolute;left:${el.x}px;top:${el.y}px;${boxStyle}font-size:${el.fontSize}px;color:${el.color};font-weight:${el.bold ? 700 : 400};font-style:${el.italic ? 'italic' : 'normal'};white-space:pre-wrap;word-wrap:break-word;line-height:1.3;">${escapeHtml(el.text)}</span>`;
+        }
+        if (el.type === 'image') {
+          return `<img src="${el.src}" style="position:absolute;left:${el.x}px;top:${el.y}px;width:${el.width}px;height:${el.height}px;object-fit:contain;" alt="">`;
+        }
+        if (el.type === 'shape') {
+          const radius = el.shapeType === 'circle' ? '50%' : '4px';
+          const border = el.strokeWidth > 0 ? `border:${el.strokeWidth}px solid ${el.strokeColor};` : '';
+          return `<div style="position:absolute;left:${el.x}px;top:${el.y}px;width:${el.width}px;height:${el.height}px;background-color:${el.fillColor};${border}border-radius:${radius};box-sizing:border-box;"></div>`;
+        }
+        return '';
+      }).join('');
+
+      const canvasSharedCss = `
+    @page { size: 3.5in 2in; margin: 0; }
+    .page-break { page-break-after: always; }
+    *, *::before, *::after { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 3.5in; background: white; }
+    .business-card-wrapper { width: 3.5in !important; height: 2in !important; display: block; }
+    .business-card-wrapper > div { width: 3.5in !important; height: 2in !important; border-radius: 0 !important; overflow: hidden; transform: none !important; position: relative; }`;
+
+      printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Print - ${escapeHtml(card.name)}</title>
+  <style>${canvasSharedCss}</style>
+</head>
+<body>
+  <div class="page-break">${clone.outerHTML}</div>
+  <div class="business-card-wrapper">
+    <div style="background-color:${backBg};">${backElsHtml}</div>
+  </div>
+  <script>
+    window.onload = function() {
+      window.print();
+      window.onafterprint = function() { window.close(); };
+    };
+  </script>
+</body>
+</html>`);
+      printWindow.document.close();
+      return;
+    }
+
+    // Build back HTML from card data + template styles
+    const template = templates.find(t => t.id === card.template) || templates[0];
+    const style = template.style;
+    const resolvedBg      = card.cardBgColor       || style.backgroundColor;
+    const resolvedPrimary = card.cardPrimaryColor   || style.primaryColor;
+    const resolvedText    = card.cardTextColor      || style.textColor;
+
+    const backHTML = `
+      <div class="business-card-wrapper">
+        <div class="card-back-inner" style="background-color:${resolvedBg};color:${resolvedText};font-family:${style.fontFamily};">
+          <div class="card-back-accent" style="border-color:${resolvedPrimary};"></div>
+          ${card.backLogo ? `<img src="${card.backLogo}" class="card-back-logo" alt="Logo">` : ''}
+          ${card.backTagline ? `<p class="card-back-tagline" style="color:${resolvedPrimary};">${escapeHtml(card.backTagline)}</p>` : ''}
+          ${!card.backLogo && !card.backTagline ? `<p class="card-back-placeholder" style="color:${style.accentColor};">Card Back</p>` : ''}
+        </div>
+      </div>`;
+
     printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
@@ -199,12 +261,21 @@ const Dashboard = () => {
       {/* Header */}
       <header className="dashboard-header">
         <h1>My Business Cards</h1>
-        <button onClick={handleCreateNew} className="btn-primary">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-            <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          Create New Card
-        </button>
+        <div className="dashboard-header-actions">
+          <button onClick={handleCreateCanvas} className="btn-secondary">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M7 10H13M10 7V13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            Custom Canvas
+          </button>
+          <button onClick={handleCreateNew} className="btn-primary">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 5V15M5 10H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            Create New Card
+          </button>
+        </div>
       </header>
 
       {/* Cards Grid */}
@@ -219,9 +290,14 @@ const Dashboard = () => {
             </div>
             <h2>No Business Cards Yet</h2>
             <p>Create your first professional business card</p>
-            <button onClick={handleCreateNew} className="btn-primary large">
-              Create Your First Card
-            </button>
+            <div className="empty-state-actions">
+              <button onClick={handleCreateNew} className="btn-primary large">
+                Create Your First Card
+              </button>
+              <button onClick={handleCreateCanvas} className="btn-secondary large">
+                Start with Canvas
+              </button>
+            </div>
           </div>
         ) : (
           <div className="cards-grid">
@@ -235,11 +311,14 @@ const Dashboard = () => {
                   aria-label={`Preview ${card.name}'s card in 3D`}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setPreviewCard(card); }}
                 >
-                  <BusinessCard data={card} templateId={card.template} />
+                  {card.type === 'canvas'
+                    ? <CanvasPreview data={card} scale={1} />
+                    : <BusinessCard data={card} templateId={card.template} />
+                  }
                 </div>
                 <div className="card-actions">
                   <button
-                    onClick={() => handleEditCard(card.id)}
+                    onClick={() => handleEditCard(card)}
                     className="action-btn edit"
                     title="Edit card"
                   >

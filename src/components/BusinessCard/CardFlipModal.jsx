@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import BusinessCard from './BusinessCard';
 import CardBack from './CardBack';
+import CanvasPreview from '../Canvas/CanvasPreview';
 import './CardFlipModal.css';
 
 const DRAG_THRESHOLD = 6;
@@ -140,10 +141,16 @@ const CardFlipModal = ({ card, onClose }) => {
             >
               <div className={`card-flip-card ${flipped ? 'is-flipped' : ''}`}>
                 <div className="card-flip-face card-flip-face--front">
-                  <BusinessCard data={card} templateId={card.template} scale={1} />
+                  {card.type === 'canvas'
+                    ? <CanvasPreview data={card} side="front" scale={1} />
+                    : <BusinessCard data={card} templateId={card.template} scale={1} />
+                  }
                 </div>
                 <div className="card-flip-face card-flip-face--back">
-                  <CardBack data={card} templateId={card.template} scale={1} />
+                  {card.type === 'canvas'
+                    ? <CanvasPreview data={card} side="back" scale={1} />
+                    : <CardBack data={card} templateId={card.template} scale={1} />
+                  }
                 </div>
               </div>
             </div>

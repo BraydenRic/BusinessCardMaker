@@ -4,11 +4,18 @@ import './CardBack.css';
 
 const CardBack = ({ data, templateId, scale = 1 }) => {
   const template = templates.find(t => t.id === templateId) || templates[0];
-  const style = template.style;
+  const base = template.style;
 
-  const resolvedBg = (data.cardBgColor && data.cardBgColor !== '')
-    ? data.cardBgColor
-    : style.backgroundColor;
+  const style = {
+    ...base,
+    backgroundColor: data.cardBgColor       || base.backgroundColor,
+    primaryColor:    data.cardPrimaryColor   || base.primaryColor,
+    secondaryColor:  data.cardSecondaryColor || base.secondaryColor,
+    textColor:       data.cardTextColor      || base.textColor,
+    accentColor:     data.cardAccentColor    || base.accentColor,
+  };
+
+  const resolvedBg = style.backgroundColor;
 
   const innerStyle = {
     backgroundColor: resolvedBg,

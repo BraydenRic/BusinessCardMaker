@@ -4,6 +4,7 @@ import Navbar from './components/Shared/Navbar';
 import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import Editor from './pages/Editor';
+import CanvasEditor from './pages/CanvasEditor';
 import './App.css';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/editor" element={<Editor />} />
+          <Route path="/canvas" element={<CanvasEditor />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

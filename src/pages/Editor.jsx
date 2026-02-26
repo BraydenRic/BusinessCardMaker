@@ -21,6 +21,7 @@ const Editor = () => {
   const [saving, setSaving] = useState(false);
   const [previewScale, setPreviewScale] = useState(1.0);
   const [previewTab, setPreviewTab] = useState('front');
+  const [advancedMode, setAdvancedMode] = useState(false);
   const previewRef = useRef(null);
 
   // Sample data for template previews
@@ -167,6 +168,45 @@ const Editor = () => {
                 )}
               </div>
             </div>
+
+            <button
+              type="button"
+              className="advanced-toggle"
+              onClick={() => setAdvancedMode(v => !v)}
+            >
+              {advancedMode ? '▲ Hide Advanced Colors' : '▼ Advanced Colors'}
+            </button>
+
+            {advancedMode && (() => {
+              const tplStyle = templates.find(t => t.id === selectedTemplate)?.style ?? {};
+              const colorField = (id, label, field, fallback) => (
+                <div className="form-group advanced-color-group" key={field}>
+                  <label htmlFor={field}>{label}</label>
+                  <div className="color-picker-row">
+                    <input
+                      type="color"
+                      id={field}
+                      value={cardData[field] || fallback}
+                      onChange={(e) => handleInputChange(field, e.target.value)}
+                    />
+                    <span className="color-value">{cardData[field] || 'Template default'}</span>
+                    {cardData[field] && (
+                      <button type="button" className="btn-reset-color" onClick={() => handleInputChange(field, '')}>
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+              return (
+                <div className="advanced-colors">
+                  {colorField('primaryColor',   'Primary Color',   'cardPrimaryColor',   tplStyle.primaryColor   ?? '#3b82f6')}
+                  {colorField('secondaryColor', 'Secondary Color', 'cardSecondaryColor', tplStyle.secondaryColor ?? '#60a5fa')}
+                  {colorField('textColor',      'Text Color',      'cardTextColor',      tplStyle.textColor      ?? '#f1f5f9')}
+                  {colorField('accentColor',    'Accent Color',    'cardAccentColor',    tplStyle.accentColor    ?? '#94a3b8')}
+                </div>
+              );
+            })()}
           </div>
 
           <div className="form-section">

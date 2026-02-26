@@ -76,7 +76,7 @@
 
 /* 3D scene */
 .card-flip-drag-zone {
-  padding: 40px 70px;
+  padding: 60px 110px;
   cursor: grab;
   display: flex;
   align-items: center;
@@ -92,6 +92,8 @@
   perspective-origin: 50% 50%;
   width: 350px;
   height: 200px;
+  transform: scale(1.4);
+  transform-origin: center center;
 }
 
 
@@ -141,15 +143,27 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
+/* Tablet: back to 1× */
+@media (max-width: 768px) {
+  .card-flip-drag-zone {
+    padding: 40px 70px;
+  }
+
+  .card-flip-scene {
+    transform: scale(1);
+    transform-origin: center center;
+  }
+}
+
 /* Mobile: scale down scene to fit */
 @media (max-width: 480px) {
   .card-flip-drag-zone {
-    padding: 0;
+    padding: 20px 40px;
   }
 
   .card-flip-scene {
     transform: scale(0.8);
-    transform-origin: top center;
+    transform-origin: center center;
   }
 
   .card-flip-modal-content {

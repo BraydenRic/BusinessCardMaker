@@ -3,10 +3,20 @@ import './BusinessCard.css';
 
 const BusinessCard = ({ data, templateId, scale = 1 }) => {
   const template = templates.find(t => t.id === templateId) || templates[0];
-  const style = template.style;
+  const base = template.style;
+
+  // Allow per-card color overrides (advanced mode) while falling back to template defaults
+  const style = {
+    ...base,
+    backgroundColor: data.cardBgColor      || base.backgroundColor,
+    primaryColor:    data.cardPrimaryColor  || base.primaryColor,
+    secondaryColor:  data.cardSecondaryColor|| base.secondaryColor,
+    textColor:       data.cardTextColor     || base.textColor,
+    accentColor:     data.cardAccentColor   || base.accentColor,
+  };
 
   const cardStyle = {
-    backgroundColor: data.cardBgColor || style.backgroundColor,
+    backgroundColor: style.backgroundColor,
     color: style.textColor,
     fontFamily: style.fontFamily,
     transform: `scale(${scale})`,
