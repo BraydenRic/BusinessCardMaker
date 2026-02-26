@@ -7,8 +7,8 @@ const DRAG_THRESHOLD = 6;
 
 const CardFlipModal = ({ card, onClose }) => {
   const [flipped, setFlipped] = useState(false);
-  const [rotX, setRotX] = useState(-8);
-  const [rotY, setRotY] = useState(12);
+  const [rotX, setRotX] = useState(0);
+  const [rotY, setRotY] = useState(0);
 
   const isDragging = useRef(false);
   const justDragged = useRef(false);
@@ -19,8 +19,8 @@ const CardFlipModal = ({ card, onClose }) => {
   const totalDragDistance = useRef(0);
 
   // Parallel refs so handleMouseDown doesn't depend on rotX/rotY state
-  const rotXRef = useRef(-8);
-  const rotYRef = useRef(12);
+  const rotXRef = useRef(0);
+  const rotYRef = useRef(0);
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -126,21 +126,25 @@ const CardFlipModal = ({ card, onClose }) => {
 
         <p className="card-flip-hint">Drag to rotate · Click to flip</p>
 
-        <div className="card-flip-scene">
-          <div
-            className="card-flip-pivot"
-            style={{ transform: `rotateX(${rotX}deg) rotateY(${rotY}deg)` }}
-            onMouseDown={handleMouseDown}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <div className={`card-flip-card ${flipped ? 'is-flipped' : ''}`}>
-              <div className="card-flip-face card-flip-face--front">
-                <BusinessCard data={card} templateId={card.template} scale={1} />
-              </div>
-              <div className="card-flip-face card-flip-face--back">
-                <CardBack data={card} templateId={card.template} scale={1} />
+        <div
+          className="card-flip-drag-zone"
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className="card-flip-scene">
+            <div
+              className="card-flip-pivot"
+              style={{ transform: `rotateX(${rotX}deg) rotateY(${rotY}deg)` }}
+            >
+              <div className={`card-flip-card ${flipped ? 'is-flipped' : ''}`}>
+                <div className="card-flip-face card-flip-face--front">
+                  <BusinessCard data={card} templateId={card.template} scale={1} />
+                </div>
+                <div className="card-flip-face card-flip-face--back">
+                  <CardBack data={card} templateId={card.template} scale={1} />
+                </div>
               </div>
             </div>
           </div>
