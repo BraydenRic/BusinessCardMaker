@@ -367,6 +367,12 @@
   }
 }
 
+/* ── Card label section ── */
+
+.card-label-section {
+  padding: 1.25rem 2rem;
+}
+
 /* ── Card Back form section ── */
 
 .form-group input[type="file"] {

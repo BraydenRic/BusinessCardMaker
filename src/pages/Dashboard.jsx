@@ -316,6 +316,12 @@ const Dashboard = () => {
                     : <BusinessCard data={card} templateId={card.template} />
                   }
                 </div>
+                <div className="card-info">
+                  <span className="card-info-name">{card.cardLabel || card.name || 'Untitled Card'}</span>
+                  {card.type === 'canvas' && (
+                    <span className="card-info-badge">Canvas</span>
+                  )}
+                </div>
                 <div className="card-actions">
                   <button
                     onClick={() => handleEditCard(card)}

@@ -121,6 +121,22 @@ const Editor = () => {
       <div className="editor-content">
         {/* Form Section */}
         <div className="editor-form">
+          {/* Card Name */}
+          <div className="form-section card-label-section">
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label htmlFor="cardLabel">Card Name</label>
+              <input
+                type="text"
+                id="cardLabel"
+                value={cardData.cardLabel || ''}
+                onChange={(e) => handleInputChange('cardLabel', e.target.value)}
+                placeholder="e.g. Work Card, Personal, Freelance..."
+                maxLength={60}
+              />
+              <p className="form-hint">Used to identify this card on your dashboard</p>
+            </div>
+          </div>
+
           {/* Template Selection */}
           <div className="form-section">
             <h3>Choose Template</h3>

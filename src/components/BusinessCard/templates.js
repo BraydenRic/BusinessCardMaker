@@ -88,6 +88,7 @@ export const templates = [
 ];
 
 export const defaultCardData = {
+  cardLabel: '',
   name: '',
   title: '',
   company: '',
