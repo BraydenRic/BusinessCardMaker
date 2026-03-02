@@ -316,6 +316,7 @@
 
 .action-btn {
   padding: 0.625rem 1rem;
+  min-height: 44px;
   border-radius: 8px;
   font-weight: 600;
   font-size: 0.875rem;

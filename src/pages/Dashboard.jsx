@@ -114,7 +114,7 @@ const Dashboard = () => {
           return `<span style="position:absolute;left:${el.x}px;top:${el.y}px;${boxStyle}font-size:${el.fontSize}px;color:${el.color};font-weight:${el.bold ? 700 : 400};font-style:${el.italic ? 'italic' : 'normal'};white-space:pre-wrap;word-wrap:break-word;line-height:1.3;">${escapeHtml(el.text)}</span>`;
         }
         if (el.type === 'image') {
-          return `<img src="${el.src}" style="position:absolute;left:${el.x}px;top:${el.y}px;width:${el.width}px;height:${el.height}px;object-fit:contain;" alt="">`;
+          return `<img src="${escapeHtml(el.src)}" style="position:absolute;left:${el.x}px;top:${el.y}px;width:${el.width}px;height:${el.height}px;object-fit:contain;" alt="">`;
         }
         if (el.type === 'shape') {
           const radius = el.shapeType === 'circle' ? '50%' : '4px';
