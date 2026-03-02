@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useBlocker } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBusinessCards } from '../hooks/useBusinessCards';
+import QRCode from 'qrcode';
+import ConfirmLeaveModal from '../components/Shared/ConfirmLeaveModal';
 import './CanvasEditor.css';
 
 const DISPLAY_SCALE = 2;
@@ -128,11 +130,31 @@ const CanvasEditor = () => {
   const [resizing, setResizing] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [guides, setGuides] = useState([]);
+  const [qrText, setQrText] = useState('');
+  const [showQrInput, setShowQrInput] = useState(false);
+
+  const isDirtyRef = useRef(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const markDirty = useCallback(() => { isDirtyRef.current = true; setIsDirty(true); }, []);
+  const markClean = useCallback(() => { isDirtyRef.current = false; setIsDirty(false); }, []);
+
+  const blocker = useBlocker(() => isDirtyRef.current);
+
+  useEffect(() => {
+    const handler = (e) => { if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ''; } };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   const canvasRef = useRef(null);
   // Refs so memoized callbacks always read the latest values without stale closures
   const sideRef = useRef('front');
   const activeElementsRef = useRef([]);
+  // Undo history
+  const historyStackRef = useRef([]);
+  const preDragStateRef = useRef(null);
+  const elementsRef = useRef([]);
+  const elementsBackRef = useRef([]);
 
   useEffect(() => { sideRef.current = side; }, [side]);
 
@@ -141,6 +163,25 @@ const CanvasEditor = () => {
   const setActiveBgColor = side === 'front' ? setBgColor : setBgColorBack;
 
   useEffect(() => { activeElementsRef.current = activeElements; }, [activeElements]);
+  useEffect(() => { elementsRef.current = elements; }, [elements]);
+  useEffect(() => { elementsBackRef.current = elementsBack; }, [elementsBack]);
+
+  const pushHistory = useCallback(() => {
+    historyStackRef.current.push({
+      elements: JSON.parse(JSON.stringify(elementsRef.current)),
+      elementsBack: JSON.parse(JSON.stringify(elementsBackRef.current)),
+    });
+    if (historyStackRef.current.length > 50) historyStackRef.current.shift();
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (historyStackRef.current.length === 0) return;
+    const state = historyStackRef.current.pop();
+    setElements(state.elements);
+    setElementsBack(state.elementsBack);
+    setSelectedId(null);
+    setEditingId(null);
+  }, []);
 
   const selectedEl = activeElements.find(el => el.id === selectedId) ?? null;
 
@@ -150,7 +191,7 @@ const CanvasEditor = () => {
     if (cardId && cards.length > 0) {
       const existing = cards.find(c => c.id === cardId);
       if (existing && existing.type === 'canvas') {
-        setCardName(existing.name || '');
+        setCardName(existing.cardLabel || existing.name || '');
         setBgColor(existing.bgColor || '#1a1d27');
         setBgColorBack(existing.bgColorBack || existing.bgColor || '#1a1d27');
         setElements(existing.elements || []);
@@ -159,14 +200,22 @@ const CanvasEditor = () => {
     }
   }, [cardId, cards, user, navigate]);
 
-  // Backspace / Delete to remove selected element (skip when editing text)
+  // Keyboard shortcuts: Ctrl+Z undo, Backspace/Delete remove selected
   useEffect(() => {
     const onKeyDown = (e) => {
+      const tag = document.activeElement?.tagName;
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
       if (!selectedId) return;
       if (e.key !== 'Backspace' && e.key !== 'Delete') return;
-      const tag = document.activeElement?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       e.preventDefault();
+      pushHistory();
+      markDirty();
       if (sideRef.current === 'front') setElements(prev => prev.filter(el => el.id !== selectedId));
       else setElementsBack(prev => prev.filter(el => el.id !== selectedId));
       setSelectedId(null);
@@ -174,7 +223,7 @@ const CanvasEditor = () => {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedId]);
+  }, [selectedId, handleUndo, pushHistory, markDirty]);
 
   const handleSideChange = (newSide) => {
     setSide(newSide);
@@ -192,7 +241,15 @@ const CanvasEditor = () => {
     }
   }, []);
 
+  const commitUpdate = useCallback((id, updates) => {
+    pushHistory();
+    markDirty();
+    updateElement(id, updates);
+  }, [pushHistory, markDirty, updateElement]);
+
   const addToActive = (el) => {
+    pushHistory();
+    markDirty();
     if (side === 'front') setElements(prev => [...prev, el]);
     else setElementsBack(prev => [...prev, el]);
     setSelectedId(el.id);
@@ -241,10 +298,29 @@ const CanvasEditor = () => {
       fillColor: '#3b82f6', strokeColor: '#ffffff', strokeWidth: 0 });
   };
 
+  const handleAddQr = async () => {
+    const text = qrText.trim();
+    if (!text) return;
+    try {
+      const dataUrl = await QRCode.toDataURL(text, {
+        width: 200, margin: 1,
+        color: { dark: '#000000', light: '#ffffff' },
+      });
+      addToActive({ id: genId(), type: 'image', x: 120, y: 55, width: 80, height: 80, src: dataUrl });
+      setQrText('');
+      setShowQrInput(false);
+    } catch (err) {
+      console.error('QR error:', err);
+      alert('Failed to generate QR code.');
+    }
+  };
+
   // ── Delete ────────────────────────────────────────────────────────────────
 
   const handleDeleteSelected = () => {
     if (!selectedId) return;
+    pushHistory();
+    markDirty();
     if (side === 'front') setElements(prev => prev.filter(el => el.id !== selectedId));
     else setElementsBack(prev => prev.filter(el => el.id !== selectedId));
     setSelectedId(null);
@@ -252,6 +328,13 @@ const CanvasEditor = () => {
   };
 
   // ── Drag ─────────────────────────────────────────────────────────────────
+
+  const saveDragState = () => {
+    preDragStateRef.current = {
+      elements: JSON.parse(JSON.stringify(elementsRef.current)),
+      elementsBack: JSON.parse(JSON.stringify(elementsBackRef.current)),
+    };
+  };
 
   const handleElementMouseDown = (e, id) => {
     if (editingId === id) return;
@@ -261,6 +344,7 @@ const CanvasEditor = () => {
     setEditingId(null);
     const el = activeElementsRef.current.find(el => el.id === id);
     if (!el) return;
+    saveDragState();
     setDragging({ id, startX: e.clientX, startY: e.clientY, origX: el.x, origY: el.y });
   };
 
@@ -272,6 +356,7 @@ const CanvasEditor = () => {
     setEditingId(null);
     const el = activeElementsRef.current.find(el => el.id === id);
     if (!el) return;
+    saveDragState();
     setDragging({ id, startX: t.clientX, startY: t.clientY, origX: el.x, origY: el.y });
   };
 
@@ -280,6 +365,7 @@ const CanvasEditor = () => {
     e.preventDefault();
     const el = activeElementsRef.current.find(el => el.id === id);
     if (!el) return;
+    saveDragState();
     setResizing({ id, startX: e.clientX, startY: e.clientY,
       origW: el.width ?? 80, origH: el.height ?? 30 });
   };
@@ -289,6 +375,7 @@ const CanvasEditor = () => {
     const t = e.touches[0];
     const el = activeElementsRef.current.find(el => el.id === id);
     if (!el) return;
+    saveDragState();
     setResizing({ id, startX: t.clientX, startY: t.clientY,
       origW: el.width ?? 80, origH: el.height ?? 30 });
   };
@@ -327,10 +414,17 @@ const CanvasEditor = () => {
   }, [dragging, resizing, applyMove]);
 
   const handleMouseUp = useCallback(() => {
+    const wasDragging = dragging !== null || resizing !== null;
     setDragging(null);
     setResizing(null);
     setGuides([]);
-  }, []);
+    if (wasDragging && preDragStateRef.current) {
+      historyStackRef.current.push(preDragStateRef.current);
+      if (historyStackRef.current.length > 50) historyStackRef.current.shift();
+      preDragStateRef.current = null;
+      markDirty();
+    }
+  }, [dragging, resizing, markDirty]);
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
@@ -366,9 +460,10 @@ const CanvasEditor = () => {
     if (!cardName.trim()) { alert('Please enter a card name'); return; }
     try {
       setSaving(true);
-      const data = { type: 'canvas', name: cardName.trim(), bgColor, bgColorBack, elements, elementsBack };
+      const data = { type: 'canvas', name: cardName.trim(), cardLabel: cardName.trim(), bgColor, bgColorBack, elements, elementsBack };
       if (cardId) await updateCard(cardId, data);
       else await createCard(data);
+      markClean();
       navigate('/dashboard');
     } catch (err) {
       console.error('Error saving canvas card:', err);
@@ -474,7 +569,7 @@ const CanvasEditor = () => {
           <div className="toolbar-section">
             <span className="toolbar-label">Background</span>
             <div className="canvas-color-row">
-              <input type="color" value={activeBgColor} onChange={(e) => setActiveBgColor(e.target.value)} />
+              <input type="color" value={activeBgColor} onChange={(e) => { pushHistory(); markDirty(); setActiveBgColor(e.target.value); }} />
               <span className="canvas-color-value">{activeBgColor}</span>
             </div>
           </div>
@@ -508,6 +603,31 @@ const CanvasEditor = () => {
               </svg>
               Circle
             </button>
+            <button className="toolbar-btn" onClick={() => setShowQrInput(v => !v)}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <rect x="1" y="1" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.4"/>
+                <rect x="10" y="1" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.4"/>
+                <rect x="1" y="10" width="5" height="5" rx="0.5" stroke="currentColor" strokeWidth="1.4"/>
+                <rect x="2.5" y="2.5" width="2" height="2" fill="currentColor"/>
+                <rect x="11.5" y="2.5" width="2" height="2" fill="currentColor"/>
+                <rect x="2.5" y="11.5" width="2" height="2" fill="currentColor"/>
+                <path d="M10 10H11V11H10zM12 10H13V11H12zM11 11H12V12H11zM10 12H11V13H10zM12 12H13V13H12zM13 13H14V14H13zM11 13H12V14H11zM10 14H11V15H10zM12 14H13V15H12z" fill="currentColor"/>
+              </svg>
+              QR Code
+            </button>
+            {showQrInput && (
+              <div className="toolbar-qr-input">
+                <input
+                  type="text"
+                  placeholder="URL or text..."
+                  value={qrText}
+                  onChange={(e) => setQrText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleAddQr(); if (e.key === 'Escape') setShowQrInput(false); }}
+                  autoFocus
+                />
+                <button className="toolbar-btn" onClick={handleAddQr} disabled={!qrText.trim()}>Add</button>
+              </div>
+            )}
           </div>
 
           {selectedEl && (
@@ -519,20 +639,20 @@ const CanvasEditor = () => {
                   <div className="toolbar-row">
                     <label>Color</label>
                     <input type="color" value={selectedEl.color}
-                      onChange={(e) => updateElement(selectedId, { color: e.target.value })} />
+                      onChange={(e) => commitUpdate(selectedId, { color: e.target.value })} />
                   </div>
                   <div className="toolbar-row">
                     <label>Size</label>
                     <input type="number" min="6" max="72" value={selectedEl.fontSize}
                       className="toolbar-number"
-                      onChange={(e) => updateElement(selectedId, { fontSize: Number(e.target.value) })} />
+                      onChange={(e) => commitUpdate(selectedId, { fontSize: Number(e.target.value) })} />
                     <span className="toolbar-unit">px</span>
                   </div>
                   <div className="toolbar-row">
                     <button className={`toolbar-style-btn ${selectedEl.bold ? 'active' : ''}`}
-                      onClick={() => updateElement(selectedId, { bold: !selectedEl.bold })}>B</button>
+                      onClick={() => commitUpdate(selectedId, { bold: !selectedEl.bold })}>B</button>
                     <button className={`toolbar-style-btn toolbar-italic ${selectedEl.italic ? 'active' : ''}`}
-                      onClick={() => updateElement(selectedId, { italic: !selectedEl.italic })}>I</button>
+                      onClick={() => commitUpdate(selectedId, { italic: !selectedEl.italic })}>I</button>
                   </div>
                 </>
               )}
@@ -542,19 +662,19 @@ const CanvasEditor = () => {
                   <div className="toolbar-row">
                     <label>Fill</label>
                     <input type="color" value={selectedEl.fillColor}
-                      onChange={(e) => updateElement(selectedId, { fillColor: e.target.value })} />
+                      onChange={(e) => commitUpdate(selectedId, { fillColor: e.target.value })} />
                   </div>
                   <div className="toolbar-row">
                     <label>Border</label>
                     <input type="color"
                       value={selectedEl.strokeWidth > 0 ? selectedEl.strokeColor : '#ffffff'}
-                      onChange={(e) => updateElement(selectedId, { strokeColor: e.target.value })} />
+                      onChange={(e) => commitUpdate(selectedId, { strokeColor: e.target.value })} />
                   </div>
                   <div className="toolbar-row">
                     <label>Width</label>
                     <input type="number" min="0" max="20" value={selectedEl.strokeWidth}
                       className="toolbar-number"
-                      onChange={(e) => updateElement(selectedId, { strokeWidth: Number(e.target.value) })} />
+                      onChange={(e) => commitUpdate(selectedId, { strokeWidth: Number(e.target.value) })} />
                     <span className="toolbar-unit">px</span>
                   </div>
                 </>
@@ -574,6 +694,7 @@ const CanvasEditor = () => {
             <p>Double-click text to edit</p>
             <p>Backspace to delete selected</p>
             <p>Elements snap to each other</p>
+            <p>Ctrl+Z to undo</p>
           </div>
         </aside>
 
@@ -625,6 +746,29 @@ const CanvasEditor = () => {
           <p className="canvas-size-hint">3.5&quot; × 2&quot; &mdash; drag to move &bull; blue handle to resize &bull; elements snap to each other</p>
         </div>
       </div>
+
+      {blocker.state === 'blocked' && (
+        <ConfirmLeaveModal
+          saving={saving}
+          onStay={() => blocker.reset()}
+          onDiscard={() => blocker.proceed()}
+          onSave={async () => {
+            if (!cardName.trim()) { alert('Please enter a card name before saving.'); return; }
+            try {
+              setSaving(true);
+              const data = { type: 'canvas', name: cardName.trim(), cardLabel: cardName.trim(), bgColor, bgColorBack, elements, elementsBack };
+              if (cardId) await updateCard(cardId, data);
+              else await createCard(data);
+              markClean();
+              blocker.proceed();
+            } catch {
+              alert('Error saving card. Please try again.');
+            } finally {
+              setSaving(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

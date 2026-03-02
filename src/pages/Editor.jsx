@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import QRCode from 'qrcode';
+import { useNavigate, useSearchParams, useBlocker } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBusinessCards } from '../hooks/useBusinessCards';
 import BusinessCard from '../components/BusinessCard/BusinessCard';
 import CardBack from '../components/BusinessCard/CardBack';
 import { templates, defaultCardData } from '../components/BusinessCard/templates';
+import ConfirmLeaveModal from '../components/Shared/ConfirmLeaveModal';
 import './Editor.css';
 
 const Editor = () => {
@@ -23,6 +25,13 @@ const Editor = () => {
   const [previewTab, setPreviewTab] = useState('front');
   const [advancedMode, setAdvancedMode] = useState(false);
   const previewRef = useRef(null);
+
+  const isDirtyRef = useRef(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const markDirty = () => { isDirtyRef.current = true; setIsDirty(true); };
+  const markClean = () => { isDirtyRef.current = false; setIsDirty(false); };
+
+  const blocker = useBlocker(() => isDirtyRef.current);
 
   // Sample data for template previews
   const sampleData = {
@@ -64,11 +73,19 @@ const Editor = () => {
   }, [cardId, cards, user, navigate, templateParam]);
 
   const handleInputChange = (field, value) => {
+    markDirty();
     setCardData(prev => ({
       ...prev,
       [field]: value
     }));
   };
+
+  // Warn on browser refresh/close
+  useEffect(() => {
+    const handler = (e) => { if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ''; } };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   const handleSave = async () => {
     if (!cardData.name.trim()) {
@@ -89,6 +106,7 @@ const Editor = () => {
         await createCard(dataToSave);
       }
 
+      markClean();
       navigate('/dashboard');
     } catch (error) {
       console.error('Error saving card:', error);
@@ -102,7 +120,87 @@ const Editor = () => {
     navigate('/dashboard');
   };
 
+  const buildQr = async (url, dotColor, bgColor) => {
+    const dataUrl = await QRCode.toDataURL(url.trim(), {
+      width: 200, margin: 1,
+      color: { dark: dotColor, light: bgColor },
+    });
+    handleInputChange('backQr', dataUrl);
+  };
+
+  const resolvedQrColors = () => {
+    const tpl = templates.find(t => t.id === selectedTemplate) || templates[0];
+    return {
+      dot: cardData.backQrDotColor || cardData.cardPrimaryColor || tpl.style.primaryColor,
+      bg:  cardData.backQrBgColor  || cardData.cardBgColor      || tpl.style.backgroundColor,
+    };
+  };
+
+  const handleGenerateQr = async () => {
+    const url = cardData.backQrUrl?.trim();
+    if (!url) return;
+    try {
+      const { dot, bg } = resolvedQrColors();
+      await buildQr(url, dot, bg);
+    } catch (err) {
+      alert('Failed to generate QR code.');
+    }
+  };
+
+  const handleQrDotColorChange = async (color) => {
+    handleInputChange('backQrDotColor', color);
+    if (cardData.backQrUrl?.trim() && cardData.backQr) {
+      const { bg } = resolvedQrColors();
+      await buildQr(cardData.backQrUrl, color, bg).catch(() => {});
+    }
+  };
+
+  const handleQrBgColorChange = async (color) => {
+    handleInputChange('backQrBgColor', color);
+    if (cardData.backQrUrl?.trim() && cardData.backQr) {
+      const { dot } = resolvedQrColors();
+      await buildQr(cardData.backQrUrl, dot, color).catch(() => {});
+    }
+  };
+
+  const handleResetQrDotColor = async () => {
+    markDirty();
+    const tpl = templates.find(t => t.id === selectedTemplate) || templates[0];
+    const defaultDot = cardData.cardPrimaryColor || tpl.style.primaryColor;
+    const currentBg  = cardData.backQrBgColor || cardData.cardBgColor || tpl.style.backgroundColor;
+    setCardData(prev => ({ ...prev, backQrDotColor: '' }));
+    if (cardData.backQrUrl?.trim() && cardData.backQr) {
+      await buildQr(cardData.backQrUrl, defaultDot, currentBg).catch(() => {});
+    }
+  };
+
+  const handleResetQrBgColor = async () => {
+    markDirty();
+    const tpl = templates.find(t => t.id === selectedTemplate) || templates[0];
+    const currentDot = cardData.backQrDotColor || cardData.cardPrimaryColor || tpl.style.primaryColor;
+    const defaultBg  = cardData.cardBgColor || tpl.style.backgroundColor;
+    setCardData(prev => ({ ...prev, backQrBgColor: '' }));
+    if (cardData.backQrUrl?.trim() && cardData.backQr) {
+      await buildQr(cardData.backQrUrl, currentDot, defaultBg).catch(() => {});
+    }
+  };
+
+  // Auto-update QR when card colors change — only when colors are at default (not customized)
+  useEffect(() => {
+    if (!cardData.backQr || !cardData.backQrUrl?.trim()) return;
+    if (cardData.backQrDotColor || cardData.backQrBgColor) return;
+    const tpl = templates.find(t => t.id === selectedTemplate) || templates[0];
+    const dot = cardData.cardPrimaryColor || tpl.style.primaryColor;
+    const bg  = cardData.cardBgColor      || tpl.style.backgroundColor;
+    QRCode.toDataURL(cardData.backQrUrl.trim(), { width: 200, margin: 1, color: { dark: dot, light: bg } })
+      .then(dataUrl => setCardData(prev => ({ ...prev, backQr: dataUrl })))
+      .catch(() => {});
+  // backQr intentionally excluded from deps to prevent infinite loop
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTemplate, cardData.cardPrimaryColor, cardData.cardBgColor, cardData.backQrDotColor, cardData.backQrBgColor]);
+
   return (
+    <>
     <div className="editor">
       {/* Header */}
       <header className="editor-header">
@@ -145,7 +243,7 @@ const Editor = () => {
                 <div
                   key={template.id}
                   className={`template-option ${selectedTemplate === template.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedTemplate(template.id)}
+                  onClick={() => { setSelectedTemplate(template.id); markDirty(); }}
                 >
                   <div className="template-mini-preview">
                     <BusinessCard data={{ ...cardData, cardBgColor: '' }} templateId={template.id} scale={0.75} />
@@ -334,6 +432,67 @@ const Editor = () => {
             </div>
 
             <div className="form-group">
+              <label htmlFor="backQrUrl">QR Code Link</label>
+              {cardData.backQr && (() => {
+                const { bg: previewBg } = resolvedQrColors();
+                return (
+                  <div className="back-logo-preview">
+                    <div style={{ background: previewBg, padding: '4px', borderRadius: '4px', lineHeight: 0 }}>
+                      <img src={cardData.backQr} alt="QR preview" style={{ width: 48, height: 48, imageRendering: 'pixelated', display: 'block' }} />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-remove-logo"
+                      onClick={() => { handleInputChange('backQr', ''); handleInputChange('backQrUrl', ''); handleInputChange('backQrDotColor', ''); handleInputChange('backQrBgColor', ''); }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                );
+              })()}
+              <div className="qr-input-row">
+                <input
+                  type="text"
+                  id="backQrUrl"
+                  value={cardData.backQrUrl || ''}
+                  onChange={(e) => handleInputChange('backQrUrl', e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleGenerateQr(); }}
+                  placeholder="https://yourwebsite.com"
+                />
+                <button
+                  type="button"
+                  className="btn-generate-qr"
+                  onClick={handleGenerateQr}
+                  disabled={!cardData.backQrUrl?.trim()}
+                >
+                  Generate
+                </button>
+              </div>
+              {cardData.backQr && (() => {
+                const { dot, bg } = resolvedQrColors();
+                return (
+                  <div className="qr-color-row">
+                    <div className="qr-color-item">
+                      <label>Dots</label>
+                      <input type="color" value={dot} onChange={(e) => handleQrDotColorChange(e.target.value)} />
+                      {cardData.backQrDotColor && (
+                        <button type="button" className="btn-reset-color" onClick={handleResetQrDotColor}>Reset</button>
+                      )}
+                    </div>
+                    <div className="qr-color-item">
+                      <label>Background</label>
+                      <input type="color" value={bg} onChange={(e) => handleQrBgColorChange(e.target.value)} />
+                      {cardData.backQrBgColor && (
+                        <button type="button" className="btn-reset-color" onClick={handleResetQrBgColor}>Reset</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+              <p className="form-hint">Centers on card back · moves to corner when a logo is added</p>
+            </div>
+
+            <div className="form-group">
               <label htmlFor="backTagline">Tagline / Short Text</label>
               <input
                 type="text"
@@ -382,6 +541,30 @@ const Editor = () => {
         </div>
       </div>
     </div>
+
+    {blocker.state === 'blocked' && (
+      <ConfirmLeaveModal
+        saving={saving}
+        onStay={() => blocker.reset()}
+        onDiscard={() => blocker.proceed()}
+        onSave={async () => {
+          if (!cardData.name.trim()) { alert('Please enter a name before saving.'); return; }
+          try {
+            setSaving(true);
+            const dataToSave = { ...cardData, template: selectedTemplate };
+            if (cardId) await updateCard(cardId, dataToSave);
+            else await createCard(dataToSave);
+            markClean();
+            blocker.proceed();
+          } catch {
+            alert('Error saving card. Please try again.');
+          } finally {
+            setSaving(false);
+          }
+        }}
+      />
+    )}
+    </>
   );
 };
 

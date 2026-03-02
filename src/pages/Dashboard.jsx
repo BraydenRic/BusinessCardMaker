@@ -10,9 +10,11 @@ import './Dashboard.css';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
-  const { cards, loading, deleteCard } = useBusinessCards();
+  const { cards, loading, deleteCard, createCard, updateCard } = useBusinessCards();
   const navigate = useNavigate();
   const [previewCard, setPreviewCard] = useState(null);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const handleCreateNew = () => {
     navigate('/editor');
@@ -39,6 +41,39 @@ const Dashboard = () => {
         alert('Failed to delete card. Please try again.');
       }
     }
+  };
+
+  const handleDuplicateCard = async (card) => {
+    try {
+      const { id, createdAt, updatedAt, ...cardData } = card;
+      const label = cardData.cardLabel || cardData.name || 'Card';
+      await createCard({ ...cardData, cardLabel: `${label} (Copy)` });
+    } catch (error) {
+      console.error('Error duplicating card:', error);
+      alert('Failed to duplicate card. Please try again.');
+    }
+  };
+
+  const startRename = (card) => {
+    const current = card.cardLabel || card.name || '';
+    setRenameValue(current.replace(/ \(Copy\)$/, ''));
+    setRenamingId(card.id);
+  };
+
+  const saveRename = async (card) => {
+    const trimmed = renameValue.trim();
+    setRenamingId(null);
+    if (!trimmed || trimmed === (card.cardLabel || card.name)) return;
+    try {
+      await updateCard(card.id, { ...card, cardLabel: trimmed });
+    } catch (error) {
+      console.error('Error renaming card:', error);
+    }
+  };
+
+  const cancelRename = () => {
+    setRenamingId(null);
+    setRenameValue('');
   };
 
   const escapeHtml = (str) => String(str ?? '')
@@ -133,7 +168,8 @@ const Dashboard = () => {
           <div class="card-back-accent" style="border-color:${resolvedPrimary};"></div>
           ${card.backLogo ? `<img src="${card.backLogo}" class="card-back-logo" alt="Logo">` : ''}
           ${card.backTagline ? `<p class="card-back-tagline" style="color:${resolvedPrimary};">${escapeHtml(card.backTagline)}</p>` : ''}
-          ${!card.backLogo && !card.backTagline ? `<p class="card-back-placeholder" style="color:${style.accentColor};">Card Back</p>` : ''}
+          ${!card.backLogo && !card.backTagline && !card.backQr ? `<p class="card-back-placeholder" style="color:${style.accentColor};">Card Back</p>` : ''}
+          ${card.backQr ? `<img src="${card.backQr}" class="card-back-qr" alt="QR Code">` : ''}
         </div>
       </div>`;
 
@@ -222,6 +258,9 @@ const Dashboard = () => {
     .card-back-logo { max-width: 120px; max-height: 60px; object-fit: contain; }
     .card-back-tagline { font-size: 0.9rem; font-weight: 500; text-align: center; letter-spacing: 0.04em; margin: 0; max-width: 280px; line-height: 1.4; }
     .card-back-placeholder { font-size: 0.8rem; opacity: 0.4; margin: 0; letter-spacing: 0.1em; text-transform: uppercase; }
+    .card-back-qr { border-radius: 3px; image-rendering: pixelated; }
+    .card-back-qr--center { width: 72px; height: 72px; }
+    .card-back-qr--corner { position: absolute; bottom: 10px; right: 10px; width: 54px; height: 54px; }
   </style>
 </head>
 <body>
@@ -317,8 +356,32 @@ const Dashboard = () => {
                   }
                 </div>
                 <div className="card-info">
-                  <span className="card-info-name">{card.cardLabel || card.name || 'Untitled Card'}</span>
-                  {card.type === 'canvas' && (
+                  {renamingId === card.id ? (
+                    <input
+                      className="card-rename-input"
+                      value={renameValue}
+                      autoFocus
+                      maxLength={60}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={() => saveRename(card)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.target.blur(); }
+                        if (e.key === 'Escape') { cancelRename(); }
+                      }}
+                    />
+                  ) : (
+                    <span
+                      className="card-info-name"
+                      onClick={() => startRename(card)}
+                      title="Click to rename"
+                    >
+                      {card.cardLabel || card.name || 'Untitled Card'}
+                      <svg className="card-rename-icon" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </span>
+                  )}
+                  {card.type === 'canvas' && renamingId !== card.id && (
                     <span className="card-info-badge">Canvas</span>
                   )}
                 </div>
@@ -332,6 +395,17 @@ const Dashboard = () => {
                       <path d="M11.3333 2L14 4.66667L5 13.6667H2.33333V11L11.3333 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                     Edit
+                  </button>
+                  <button
+                    onClick={() => handleDuplicateCard(card)}
+                    className="action-btn duplicate"
+                    title="Duplicate card"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <rect x="5" y="5" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M3 11V3.5C3 2.67157 3.67157 2 4.5 2H11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    Duplicate
                   </button>
                   <button
                     onClick={(e) => handlePrintCard(card, e)}

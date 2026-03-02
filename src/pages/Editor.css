@@ -450,6 +450,73 @@
   background: transparent;
 }
 
+.qr-input-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.qr-input-row input {
+  flex: 1;
+}
+
+.btn-generate-qr {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--accent-gradient);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+.btn-generate-qr:hover:not(:disabled) {
+  opacity: 0.85;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-generate-qr:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.qr-color-row {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.qr-color-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.qr-color-item label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.qr-color-item input[type="color"] {
+  width: 36px;
+  height: 28px;
+  padding: 2px;
+  border-radius: 5px;
+  border: 1.5px solid var(--border-primary);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+}
+
 .color-picker-row {
   display: flex;
   align-items: center;

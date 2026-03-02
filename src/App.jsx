@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Outlet, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Shared/Navbar';
 import Landing from './pages/Landing';
@@ -7,21 +7,28 @@ import Editor from './pages/Editor';
 import CanvasEditor from './pages/CanvasEditor';
 import './App.css';
 
+const Layout = () => (
+  <AuthProvider>
+    <Navbar />
+    <Outlet />
+  </AuthProvider>
+);
+
+const router = createBrowserRouter([
+  {
+    element: <Layout />,
+    children: [
+      { path: '/',          element: <Landing /> },
+      { path: '/dashboard', element: <Dashboard /> },
+      { path: '/editor',    element: <Editor /> },
+      { path: '/canvas',    element: <CanvasEditor /> },
+      { path: '*',          element: <Navigate to="/" replace /> },
+    ],
+  },
+]);
+
 function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/editor" element={<Editor />} />
-          <Route path="/canvas" element={<CanvasEditor />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

@@ -53,10 +53,18 @@ const CardBack = ({ data, templateId, scale = 1 }) => {
           </p>
         )}
 
-        {!data.backLogo && !data.backTagline && (
+        {!data.backLogo && !data.backTagline && !data.backQr && (
           <p className="card-back-placeholder" style={{ color: style.accentColor }}>
             Card Back
           </p>
+        )}
+
+        {data.backQr && (
+          <img
+            src={data.backQr}
+            alt="QR Code"
+            className={`card-back-qr ${data.backLogo ? 'card-back-qr--corner' : 'card-back-qr--center'}`}
+          />
         )}
       </div>
     </div>

@@ -254,6 +254,44 @@
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 4px;
+  padding: 0.1rem 0.25rem;
+  margin: -0.1rem -0.25rem;
+  transition: background 0.15s ease;
+}
+
+.card-info-name:hover {
+  background: var(--bg-tertiary);
+}
+
+.card-rename-icon {
+  color: var(--text-muted);
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.card-info-name:hover .card-rename-icon {
+  opacity: 1;
+}
+
+.card-rename-input {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--accent-primary);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  outline: none;
+  font-family: inherit;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  min-width: 0;
 }
 
 .card-info-badge {
@@ -272,7 +310,7 @@
 /* Card Actions */
 .card-actions {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
 }
 
@@ -297,6 +335,11 @@
 }
 
 .action-btn.edit:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.action-btn.duplicate:hover {
   border-color: var(--accent-primary);
   color: var(--accent-primary);
 }

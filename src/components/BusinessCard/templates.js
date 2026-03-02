@@ -101,5 +101,9 @@ export const defaultCardData = {
   template: 'modern',
   backLogo: '',
   backTagline: '',
-  backBgColor: ''
+  backBgColor: '',
+  backQrUrl: '',
+  backQrDotColor: '',
+  backQrBgColor: '',
+  backQr: ''
 };
