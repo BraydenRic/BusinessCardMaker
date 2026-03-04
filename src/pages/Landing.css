@@ -1,5 +1,6 @@
 .landing-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-primary);
   position: relative;
   isolation: isolate;
@@ -8,6 +9,7 @@
 /* Hero Section */
 .hero {
   min-height: 90vh;
+  min-height: 90dvh;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4rem;
@@ -413,5 +415,35 @@
   .template-preview {
     overflow: hidden;
     border-radius: 6px;
+  }
+}
+
+@media (max-width: 375px) {
+  .hero {
+    padding: 1.5rem 1rem;
+  }
+
+  .hero h1 {
+    font-size: 1.625rem;
+  }
+
+  .hero-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .hero-buttons {
+    gap: 0.625rem;
+  }
+
+  .features,
+  .templates-gallery,
+  .cta-section {
+    padding: 2.5rem 1rem;
+  }
+
+  .features h2,
+  .templates-gallery h2,
+  .cta-section h2 {
+    font-size: 1.5rem;
   }
 }

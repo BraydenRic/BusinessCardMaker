@@ -8,6 +8,11 @@ import CardFlipModal from '../components/BusinessCard/CardFlipModal';
 import { templates } from '../components/BusinessCard/templates';
 import './Dashboard.css';
 
+const SAMPLE_DATA = {
+  name: 'Alex Rivera', title: 'Product Designer', company: 'Studio Co.',
+  email: 'alex@studio.co', phone: '+1 555 0192', website: 'studio.co',
+};
+
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const { cards, loading, deleteCard, createCard, updateCard } = useBusinessCards();
@@ -15,13 +20,14 @@ const Dashboard = () => {
   const [previewCard, setPreviewCard] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
+  const [showCanvasStarter, setShowCanvasStarter] = useState(false);
 
   const handleCreateNew = () => {
     navigate('/editor');
   };
 
   const handleCreateCanvas = () => {
-    navigate('/canvas');
+    setShowCanvasStarter(true);
   };
 
   const handleEditCard = (card) => {
@@ -439,6 +445,35 @@ const Dashboard = () => {
           card={previewCard}
           onClose={() => setPreviewCard(null)}
         />
+      )}
+
+      {showCanvasStarter && (
+        <div className="canvas-starter-overlay" onClick={() => setShowCanvasStarter(false)}>
+          <div className="canvas-starter-modal" onClick={e => e.stopPropagation()}>
+            <h2>Start Your Canvas</h2>
+            <p className="canvas-starter-sub">Pick a starting point — you can customize everything</p>
+            <div className="canvas-starter-grid">
+              <div className="canvas-starter-option" onClick={() => { setShowCanvasStarter(false); navigate('/canvas'); }}>
+                <div className="canvas-starter-blank">
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <path d="M16 8V24M8 16H24" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                <span>Blank Canvas</span>
+              </div>
+              {templates.map(tpl => (
+                <div key={tpl.id} className="canvas-starter-option"
+                  onClick={() => { setShowCanvasStarter(false); navigate(`/canvas?template=${tpl.id}`); }}>
+                  <div className="canvas-starter-preview">
+                    <BusinessCard data={SAMPLE_DATA} templateId={tpl.id} scale={0.48} />
+                  </div>
+                  <span>{tpl.name}</span>
+                </div>
+              ))}
+            </div>
+            <button className="canvas-starter-close" onClick={() => setShowCanvasStarter(false)}>✕</button>
+          </div>
+        </div>
       )}
     </div>
   );

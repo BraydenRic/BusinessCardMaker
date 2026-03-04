@@ -1,11 +1,13 @@
 .dashboard {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--bg-primary);
 }
 
 /* Loading State */
 .dashboard-loading {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -167,6 +169,7 @@
 /* Cards Grid */
 .cards-grid {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   grid-template-columns: repeat(auto-fill, minmax(min(400px, 100%), 1fr));
   gap: 2rem;
   animation: fadeIn 0.6s ease-out;
@@ -423,3 +426,84 @@
     display: none;
   }
 }
+
+@media (max-width: 375px) {
+  .dashboard-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .dashboard-header h1 {
+    font-size: 1.1rem;
+  }
+
+  .dashboard-header-actions button {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.625rem;
+  }
+
+  .dashboard-content {
+    padding: 0.75rem;
+  }
+
+  .card-item {
+    padding: 0.875rem;
+  }
+
+  .card-actions {
+    gap: 0.25rem;
+  }
+
+  .action-btn {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.4rem;
+  }
+
+  .canvas-starter-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .canvas-starter-blank {
+    width: 140px;
+    height: 80px;
+  }
+}
+
+/* Canvas Starter Modal */
+.canvas-starter-overlay {
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 500;
+  background: rgba(0,0,0,0.75);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+}
+.canvas-starter-modal {
+  background: var(--bg-secondary); border: 1px solid var(--border-primary);
+  border-radius: 16px; padding: 2rem;
+  max-width: 800px; width: 92vw; max-height: 90vh; overflow-y: auto;
+  position: relative;
+}
+.canvas-starter-modal h2 { margin: 0 0 0.25rem; }
+.canvas-starter-sub { color: var(--text-muted); margin: 0 0 1.5rem; font-size: 0.9rem; }
+.canvas-starter-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem;
+}
+.canvas-starter-option {
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  cursor: pointer; border-radius: 10px; padding: 0.5rem;
+  border: 2px solid transparent; transition: border-color 0.2s;
+}
+.canvas-starter-option:hover { border-color: var(--accent-primary); }
+.canvas-starter-option span { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+.canvas-starter-blank {
+  width: 168px; height: 96px; border-radius: 8px;
+  border: 2px dashed var(--border-secondary);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+}
+.canvas-starter-preview { border-radius: 8px; overflow: hidden; pointer-events: none; }
+.canvas-starter-close {
+  position: absolute; top: 1rem; right: 1rem;
+  background: none; border: none; color: var(--text-muted);
+  font-size: 1.1rem; cursor: pointer; padding: 0.25rem 0.5rem;
+}
+.canvas-starter-close:hover { color: var(--text-primary); }

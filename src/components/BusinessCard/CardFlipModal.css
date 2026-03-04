@@ -1,8 +1,9 @@
 .card-flip-overlay {
   position: fixed;
-  inset: 0;
+  top: 0; right: 0; bottom: 0; left: 0;
   z-index: 1000;
-  background: rgba(0, 0, 0, 0.82);
+  background: rgba(0, 0, 0, 0.87);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -88,6 +89,7 @@
 }
 
 .card-flip-scene {
+  -webkit-perspective: 700px;
   perspective: 700px;
   perspective-origin: 50% 50%;
   width: 350px;
@@ -100,6 +102,7 @@
 .card-flip-pivot {
   width: 350px;
   height: 200px;
+  -webkit-transform-style: preserve-3d;
   transform-style: preserve-3d;
   pointer-events: auto;
   user-select: none;
@@ -109,6 +112,7 @@
 .card-flip-card {
   width: 350px;
   height: 200px;
+  -webkit-transform-style: preserve-3d;
   transform-style: preserve-3d;
   transition: transform 0.55s ease-in-out;
   position: relative;
