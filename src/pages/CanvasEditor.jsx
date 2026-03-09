@@ -206,13 +206,16 @@ const CanvasEditor = () => {
   const [elementsBack, setElementsBack] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [dragging, setDragging] = useState(null);
-  const [resizing, setResizing] = useState(null);
   const [editingId, setEditingId] = useState(null);
+  const draggingRef = useRef(null);
+  const resizingRef = useRef(null);
   const [guides, setGuides] = useState([]);
   const [qrText, setQrText] = useState('');
   const [showQrInput, setShowQrInput] = useState(false);
 
+  const shiftHeldRef = useRef(false);
+  const clipboardRef = useRef(null);
+  const hasInitializedRef = useRef(false);
   const isDirtyRef = useRef(false);
   const [isDirty, setIsDirty] = useState(false);
   const markDirty = useCallback(() => { isDirtyRef.current = true; setIsDirty(true); }, []);
@@ -224,6 +227,14 @@ const CanvasEditor = () => {
     const handler = (e) => { if (isDirtyRef.current) { e.preventDefault(); e.returnValue = ''; } };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
+  }, []);
+
+  useEffect(() => {
+    const down = (e) => { if (e.key === 'Shift') shiftHeldRef.current = true; };
+    const up   = (e) => { if (e.key === 'Shift') shiftHeldRef.current = false; };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
   }, []);
 
   const canvasRef = useRef(null);
@@ -265,39 +276,65 @@ const CanvasEditor = () => {
 
   const selectedEl = activeElements.find(el => el.id === selectedId) ?? null;
 
-  // Load existing card on edit, or initialize from template
+  // Load existing card on edit, or initialize from template — runs once only.
+  // cards is a dependency so we wait for it to load when editing an existing card,
+  // but hasInitializedRef prevents re-running if cards reloads later (e.g. after a save).
   useEffect(() => {
     if (!user) { navigate('/'); return; }
-    if (cardId && cards.length > 0) {
+    if (hasInitializedRef.current) return;
+
+    if (cardId) {
+      if (cards.length === 0) return; // wait for cards to finish loading
       const existing = cards.find(c => c.id === cardId);
       if (existing && existing.type === 'canvas') {
+        hasInitializedRef.current = true;
         setCardName(existing.cardLabel || existing.name || '');
         setBgColor(existing.bgColor || '#1a1d27');
         setBgColorBack(existing.bgColorBack || existing.bgColor || '#1a1d27');
         setElements(existing.elements || []);
         setElementsBack(existing.elementsBack || []);
       }
-    } else if (templateParam && !cardId) {
+    } else if (templateParam) {
+      hasInitializedRef.current = true;
       const { bgColor: tBg, bgColorBack: tBgBack, elements: tEls } = buildTemplateElements(templateParam);
       setBgColor(tBg);
       setBgColorBack(tBgBack);
       setElements(tEls);
+    } else {
+      hasInitializedRef.current = true; // blank canvas — nothing to load
     }
   }, [cardId, templateParam, cards, user, navigate]);
 
-  // Keyboard shortcuts: Ctrl+Z undo, Backspace/Delete remove selected
+  // Keyboard shortcuts: Ctrl+Z undo, Ctrl+C copy, Ctrl+V paste, Backspace/Delete remove
   useEffect(() => {
     const onKeyDown = (e) => {
       const tag = document.activeElement?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
         e.preventDefault();
         handleUndo();
         return;
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        if (!selectedId) return;
+        const el = activeElementsRef.current.find(el => el.id === selectedId);
+        if (el) clipboardRef.current = JSON.parse(JSON.stringify(el));
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        if (!clipboardRef.current) return;
+        e.preventDefault();
+        const pasted = { ...JSON.parse(JSON.stringify(clipboardRef.current)), id: genId(), x: clipboardRef.current.x + 8, y: clipboardRef.current.y + 8 };
+        pushHistory();
+        markDirty();
+        if (sideRef.current === 'front') setElements(prev => [...prev, pasted]);
+        else setElementsBack(prev => [...prev, pasted]);
+        setSelectedId(pasted.id);
+        return;
+      }
       if (!selectedId) return;
       if (e.key !== 'Backspace' && e.key !== 'Delete') return;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       e.preventDefault();
       pushHistory();
       markDirty();
@@ -350,7 +387,7 @@ const CanvasEditor = () => {
       text: 'Edit me',
       fontSize: 18,
       color: '#ffffff',
-      bold: false, italic: false,
+      bold: false, italic: false, textAlign: 'left',
     });
     setEditingId(null);
   };
@@ -412,6 +449,24 @@ const CanvasEditor = () => {
     setEditingId(null);
   };
 
+  // ── Layer ordering ────────────────────────────────────────────────────────
+
+  const handleBringToFront = () => {
+    if (!selectedId) return;
+    pushHistory(); markDirty();
+    const reorder = (els) => { const el = els.find(e => e.id === selectedId); return [...els.filter(e => e.id !== selectedId), el]; };
+    if (side === 'front') setElements(prev => reorder(prev));
+    else setElementsBack(prev => reorder(prev));
+  };
+
+  const handleSendToBack = () => {
+    if (!selectedId) return;
+    pushHistory(); markDirty();
+    const reorder = (els) => { const el = els.find(e => e.id === selectedId); return [el, ...els.filter(e => e.id !== selectedId)]; };
+    if (side === 'front') setElements(prev => reorder(prev));
+    else setElementsBack(prev => reorder(prev));
+  };
+
   // ── Drag ─────────────────────────────────────────────────────────────────
 
   const saveDragState = () => {
@@ -430,19 +485,20 @@ const CanvasEditor = () => {
     const el = activeElementsRef.current.find(el => el.id === id);
     if (!el) return;
     saveDragState();
-    setDragging({ id, startX: e.clientX, startY: e.clientY, origX: el.x, origY: el.y });
+    draggingRef.current = { id, startX: e.clientX, startY: e.clientY, origX: el.x, origY: el.y };
   };
 
   const handleElementTouchStart = (e, id) => {
     if (editingId === id) return;
     e.stopPropagation();
+    e.preventDefault(); // prevents browser from generating synthetic mouse/click events after touch
     const t = e.touches[0];
     setSelectedId(id);
     setEditingId(null);
     const el = activeElementsRef.current.find(el => el.id === id);
     if (!el) return;
     saveDragState();
-    setDragging({ id, startX: t.clientX, startY: t.clientY, origX: el.x, origY: el.y });
+    draggingRef.current = { id, startX: t.clientX, startY: t.clientY, origX: el.x, origY: el.y };
   };
 
   const handleResizeMouseDown = (e, id) => {
@@ -451,8 +507,8 @@ const CanvasEditor = () => {
     const el = activeElementsRef.current.find(el => el.id === id);
     if (!el) return;
     saveDragState();
-    setResizing({ id, startX: e.clientX, startY: e.clientY,
-      origW: el.width ?? 80, origH: el.height ?? 30 });
+    resizingRef.current = { id, startX: e.clientX, startY: e.clientY,
+      origW: el.width ?? 80, origH: el.height ?? 30 };
   };
 
   const handleResizeTouchStart = (e, id) => {
@@ -461,11 +517,13 @@ const CanvasEditor = () => {
     const el = activeElementsRef.current.find(el => el.id === id);
     if (!el) return;
     saveDragState();
-    setResizing({ id, startX: t.clientX, startY: t.clientY,
-      origW: el.width ?? 80, origH: el.height ?? 30 });
+    resizingRef.current = { id, startX: t.clientX, startY: t.clientY,
+      origW: el.width ?? 80, origH: el.height ?? 30 };
   };
 
   const applyMove = useCallback((clientX, clientY) => {
+    const dragging = draggingRef.current;
+    const resizing = resizingRef.current;
     if (dragging) {
       const dx = (clientX - dragging.startX) / DISPLAY_SCALE;
       const dy = (clientY - dragging.startY) / DISPLAY_SCALE;
@@ -479,29 +537,35 @@ const CanvasEditor = () => {
     if (resizing) {
       const dx = (clientX - resizing.startX) / DISPLAY_SCALE;
       const dy = (clientY - resizing.startY) / DISPLAY_SCALE;
-      const rawW = Math.max(20, resizing.origW + dx);
-      const rawH = Math.max(10, resizing.origH + dy);
+      let rawW = Math.max(20, resizing.origW + dx);
+      let rawH = Math.max(10, resizing.origH + dy);
+      if (shiftHeldRef.current && resizing.origW > 0 && resizing.origH > 0) {
+        // Lock aspect ratio: use whichever axis has scaled more to drive both dimensions
+        const scale = Math.max(rawW / resizing.origW, rawH / resizing.origH);
+        rawW = Math.max(20, resizing.origW * scale);
+        rawH = Math.max(10, resizing.origH * scale);
+      }
       const { w, h, guides: g } = computeResizeSnap(activeElementsRef.current, resizing.id, rawW, rawH);
       updateElement(resizing.id, { width: w, height: h });
       setGuides(g);
     }
-  }, [dragging, resizing, updateElement]);
+  }, [updateElement]);
 
   const handleMouseMove = useCallback((e) => {
     applyMove(e.clientX, e.clientY);
   }, [applyMove]);
 
   const handleTouchMove = useCallback((e) => {
-    if (!dragging && !resizing) return;
+    if (!draggingRef.current && !resizingRef.current) return;
     e.preventDefault();
     const t = e.touches[0];
     applyMove(t.clientX, t.clientY);
-  }, [dragging, resizing, applyMove]);
+  }, [applyMove]);
 
   const handleMouseUp = useCallback(() => {
-    const wasDragging = dragging !== null || resizing !== null;
-    setDragging(null);
-    setResizing(null);
+    const wasDragging = draggingRef.current !== null || resizingRef.current !== null;
+    draggingRef.current = null;
+    resizingRef.current = null;
     setGuides([]);
     if (wasDragging && preDragStateRef.current) {
       historyStackRef.current.push(preDragStateRef.current);
@@ -509,7 +573,7 @@ const CanvasEditor = () => {
       preDragStateRef.current = null;
       markDirty();
     }
-  }, [dragging, resizing, markDirty]);
+  }, [markDirty]);
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
@@ -524,7 +588,7 @@ const CanvasEditor = () => {
     };
   }, [handleMouseMove, handleMouseUp, handleTouchMove]);
 
-  const handleCanvasClick = (e) => {
+  const handleCanvasMouseDown = (e) => {
     if (e.target === canvasRef.current) {
       setSelectedId(null);
       setEditingId(null);
@@ -568,6 +632,8 @@ const CanvasEditor = () => {
         fontWeight: el.bold ? 700 : 400,
         fontStyle: el.italic ? 'italic' : 'normal',
         lineHeight: 1.3,
+        textAlign: el.textAlign || 'left',
+        width: '100%',
       };
       if (editingId === el.id) {
         return (
@@ -621,7 +687,7 @@ const CanvasEditor = () => {
     const base = {
       left: `${el.x * DISPLAY_SCALE}px`,
       top:  `${el.y * DISPLAY_SCALE}px`,
-      cursor: dragging?.id === el.id ? 'grabbing' : 'grab',
+      cursor: draggingRef.current?.id === el.id ? 'grabbing' : 'grab',
     };
     if (el.type === 'text' && el.width) {
       return { ...base, display: 'block', width: `${el.width * DISPLAY_SCALE}px`, height: `${el.height * DISPLAY_SCALE}px`, overflow: 'hidden' };
@@ -739,6 +805,20 @@ const CanvasEditor = () => {
                     <button className={`toolbar-style-btn toolbar-italic ${selectedEl.italic ? 'active' : ''}`}
                       onClick={() => commitUpdate(selectedId, { italic: !selectedEl.italic })}>I</button>
                   </div>
+                  <div className="toolbar-row">
+                    {['left','center','right'].map(align => (
+                      <button key={align}
+                        className={`toolbar-style-btn ${(selectedEl.textAlign || 'left') === align ? 'active' : ''}`}
+                        onClick={() => commitUpdate(selectedId, { textAlign: align })}
+                        title={`Align ${align}`}>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                          {align === 'left'   && <><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="5" x2="8"  y2="5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="11" x2="7" y2="11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></>}
+                          {align === 'center' && <><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="3" y1="5" x2="9"  y2="5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="2" y1="11" x2="10" y2="11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></>}
+                          {align === 'right'  && <><line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="4" y1="5" x2="11" y2="5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="1" y1="8" x2="11" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="5" y1="11" x2="11" y2="11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></>}
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
                 </>
               )}
 
@@ -765,6 +845,25 @@ const CanvasEditor = () => {
                 </>
               )}
 
+              <div className="toolbar-row">
+                <button className="toolbar-btn toolbar-btn-sm" onClick={handleBringToFront} title="Bring to Front">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <rect x="5" y="5" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+                    <rect x="2" y="2" width="9" height="9" rx="1.5" fill="var(--bg-secondary)" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M6 5V3M6 3L4 5M6 3L8 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Front
+                </button>
+                <button className="toolbar-btn toolbar-btn-sm" onClick={handleSendToBack} title="Send to Back">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <rect x="2" y="2" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+                    <rect x="5" y="5" width="9" height="9" rx="1.5" fill="var(--bg-secondary)" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M10 11v2M10 13l-2-2M10 13l2-2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Back
+                </button>
+              </div>
+
               <button className="toolbar-btn toolbar-btn-danger" onClick={handleDeleteSelected}>
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                   <path d="M6 2H10M2 4H14M12.6667 4L12.1991 11.0129C12.129 12.065 12.0939 12.5911 11.8667 12.99C11.6666 13.3412 11.3648 13.6235 11.0011 13.7998C10.588 14 10.0607 14 9.00623 14H6.99377C5.93927 14 5.41202 14 4.99889 13.7998C4.63517 13.6235 4.33339 13.3412 4.13332 12.99C3.90607 12.5911 3.871 12.065 3.80086 11.0129L3.33333 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -778,7 +877,9 @@ const CanvasEditor = () => {
             <p>Drag to move elements</p>
             <p>Double-click text to edit</p>
             <p>Backspace to delete selected</p>
+            <p>Shift+drag to resize proportionally</p>
             <p>Elements snap to each other</p>
+            <p>Ctrl+C / Ctrl+V to copy &amp; paste</p>
             <p>Ctrl+Z to undo</p>
           </div>
         </aside>
@@ -796,7 +897,7 @@ const CanvasEditor = () => {
             ref={canvasRef}
             className="canvas-card"
             style={{ width: `${CARD_W * DISPLAY_SCALE}px`, height: `${CARD_H * DISPLAY_SCALE}px`, backgroundColor: activeBgColor }}
-            onClick={handleCanvasClick}
+            onMouseDown={handleCanvasMouseDown}
           >
             {/* Snap guide lines */}
             {guides.map((g, i) =>
@@ -813,6 +914,7 @@ const CanvasEditor = () => {
                 onMouseDown={(e) => handleElementMouseDown(e, el.id)}
                 onTouchStart={(e) => handleElementTouchStart(e, el.id)}
                 onDoubleClick={(e) => handleElementDoubleClick(e, el.id)}
+                onClick={(e) => e.stopPropagation()}
               >
                 {renderElementContent(el)}
 
