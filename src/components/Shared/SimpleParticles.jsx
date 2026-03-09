@@ -54,6 +54,7 @@ const SimpleParticles = () => {
           const distance = Math.sqrt(dx * dx + dy * dy);
 
           if (distance < mouse.radius) {
+            // Linear falloff: force is strongest at center, zero at edge of radius
             const force = (mouse.radius - distance) / mouse.radius;
             const angle = Math.atan2(dy, dx);
             this.x += Math.cos(angle) * force * 3;
@@ -90,7 +91,7 @@ const SimpleParticles = () => {
         particle.update();
         particle.draw();
 
-        // Draw lines between nearby particles
+        // slice(i+1) ensures each pair is only drawn once (avoids duplicate A→B and B→A lines)
         particles.slice(i + 1).forEach(otherParticle => {
           const dx = particle.x - otherParticle.x;
           const dy = particle.y - otherParticle.y;

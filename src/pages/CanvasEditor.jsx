@@ -7,6 +7,7 @@ import ConfirmLeaveModal from '../components/Shared/ConfirmLeaveModal';
 import { templates } from '../components/BusinessCard/templates';
 import './CanvasEditor.css';
 
+// Card logical size is 350×200; canvas renders at 2× for crisp display on high-DPI screens
 const DISPLAY_SCALE = 2;
 const CARD_W = 350;
 const CARD_H = 200;

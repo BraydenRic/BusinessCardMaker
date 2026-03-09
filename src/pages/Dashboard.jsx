@@ -82,6 +82,7 @@ const Dashboard = () => {
     setRenameValue('');
   };
 
+  // Sanitize user content before injecting into print HTML to prevent XSS
   const escapeHtml = (str) => String(str ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

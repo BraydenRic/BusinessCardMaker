@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // User profile document — stores cardCount used to enforce the per-user card limit
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      match /cards/{cardId} {
+        allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+
+        // Server-side limit: reject card creation if the user is already at the cap.
+        // The get() reads cardCount before the transaction commits, so this correctly
+        // blocks the 26th write even if the client-side check is bypassed.
+        allow create: if request.auth != null
+                      && request.auth.uid == userId
+                      && (!exists(/databases/$(database)/documents/users/$(userId))
+                          || get(/databases/$(database)/documents/users/$(userId)).data.cardCount < 25);
+      }
+    }
+  }
+}

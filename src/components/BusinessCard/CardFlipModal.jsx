@@ -44,6 +44,7 @@ const CardFlipModal = ({ card, onClose }) => {
     const dx = e.clientX - dragStartX.current;
     const dy = e.clientY - dragStartY.current;
     totalDragDistance.current = Math.sqrt(dx * dx + dy * dy);
+    // 0.4 gives a natural drag-to-rotation ratio; X clamped to ±35° to avoid flipping upside-down
     const newRotY = startRotY.current + dx * 0.4;
     const newRotX = Math.max(-35, Math.min(35, startRotX.current - dy * 0.4));
     rotXRef.current = newRotX;
@@ -108,6 +109,7 @@ const CardFlipModal = ({ card, onClose }) => {
     <div
       className="card-flip-overlay"
       onClick={(e) => {
+        // Suppress the backdrop click that fires immediately after a drag-release
         if (justDragged.current) { justDragged.current = false; return; }
         if (e.target === e.currentTarget) onClose();
       }}
