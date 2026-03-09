@@ -43,7 +43,7 @@ const SimpleParticles = () => {
         this.vx = (Math.random() - 0.5) * 1;
         this.vy = (Math.random() - 0.5) * 1;
         this.radius = Math.random() * 2 + 1;
-        this.color = ['#3b82f6', '#60a5fa', '#93c5fd'][Math.floor(Math.random() * 3)];
+        this.color = ['#a855f7', '#3b82f6', '#ffffff'][Math.floor(Math.random() * 3)];
       }
 
       update() {
@@ -99,7 +99,7 @@ const SimpleParticles = () => {
 
           if (distance < 150) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(59, 130, 246, ${0.3 * (1 - distance / 150)})`;
+            ctx.strokeStyle = `rgba(168, 85, 247, ${0.3 * (1 - distance / 150)})`;
             ctx.lineWidth = 1;
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(otherParticle.x, otherParticle.y);
@@ -115,7 +115,7 @@ const SimpleParticles = () => {
 
           if (distance < mouse.radius) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(96, 165, 250, ${0.6 * (1 - distance / mouse.radius)})`;
+            ctx.strokeStyle = `rgba(168, 85, 247, ${0.6 * (1 - distance / mouse.radius)})`;
             ctx.lineWidth = 2;
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(mouse.x, mouse.y);
