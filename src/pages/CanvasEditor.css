@@ -1,9 +1,10 @@
 .canvas-editor {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* ── Header ── */
@@ -417,6 +418,16 @@
   border: 2px solid white;
   border-radius: 3px;
   cursor: se-resize;
+}
+
+/* ── Rubber-band selection rectangle ── */
+.canvas-rubber-band {
+  position: absolute;
+  border: 1.5px dashed var(--accent-primary);
+  background: rgba(59, 130, 246, 0.08);
+  pointer-events: none;
+  z-index: 100;
+  border-radius: 2px;
 }
 
 /* ── Responsive ── */

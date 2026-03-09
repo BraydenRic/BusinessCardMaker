@@ -204,11 +204,15 @@ const CanvasEditor = () => {
   const [bgColorBack, setBgColorBack] = useState('#1a1d27');
   const [elements, setElements] = useState([]);
   const [elementsBack, setElementsBack] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const draggingRef = useRef(null);
   const resizingRef = useRef(null);
+  const rubberBandRef = useRef(null);
+  const rubberBandStateRef = useRef(null);
+  const [rubberBand, setRubberBand] = useState(null);
+  const setRubberBandState = (value) => { rubberBandStateRef.current = value; setRubberBand(value); };
   const [guides, setGuides] = useState([]);
   const [qrText, setQrText] = useState('');
   const [showQrInput, setShowQrInput] = useState(false);
@@ -238,6 +242,26 @@ const CanvasEditor = () => {
   }, []);
 
   const canvasRef = useRef(null);
+  const workAreaRef = useRef(null);
+  const [canvasScale, setCanvasScale] = useState(1);
+  const canvasScaleRef = useRef(1);
+
+  // Scale the canvas to fit the available work area
+  useEffect(() => {
+    const el = workAreaRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(() => {
+      const { width, height } = el.getBoundingClientRect();
+      const scaleX = (width  - 80)  / (CARD_W * DISPLAY_SCALE);
+      const scaleY = (height - 160) / (CARD_H * DISPLAY_SCALE);
+      const s = Math.min(1, scaleX, scaleY);
+      canvasScaleRef.current = s;
+      setCanvasScale(s);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   // Refs so memoized callbacks always read the latest values without stale closures
   const sideRef = useRef('front');
   const activeElementsRef = useRef([]);
@@ -270,11 +294,15 @@ const CanvasEditor = () => {
     const state = historyStackRef.current.pop();
     setElements(state.elements);
     setElementsBack(state.elementsBack);
-    setSelectedId(null);
+    setSelectedIds(new Set());
     setEditingId(null);
   }, []);
 
-  const selectedEl = activeElements.find(el => el.id === selectedId) ?? null;
+  // For the properties panel: only show element controls when exactly one is selected
+  const selectedEl = selectedIds.size === 1
+    ? (activeElements.find(el => el.id === [...selectedIds][0]) ?? null)
+    : null;
+  const selectedId = selectedEl?.id ?? null;
 
   // Load existing card on edit, or initialize from template — runs once only.
   // cards is a dependency so we wait for it to load when editing an existing card,
@@ -330,26 +358,27 @@ const CanvasEditor = () => {
         markDirty();
         if (sideRef.current === 'front') setElements(prev => [...prev, pasted]);
         else setElementsBack(prev => [...prev, pasted]);
-        setSelectedId(pasted.id);
+        setSelectedIds(new Set([pasted.id]));
         return;
       }
-      if (!selectedId) return;
+      if (selectedIds.size === 0) return;
       if (e.key !== 'Backspace' && e.key !== 'Delete') return;
       e.preventDefault();
       pushHistory();
       markDirty();
-      if (sideRef.current === 'front') setElements(prev => prev.filter(el => el.id !== selectedId));
-      else setElementsBack(prev => prev.filter(el => el.id !== selectedId));
-      setSelectedId(null);
+      const toDelete = new Set(selectedIds);
+      if (sideRef.current === 'front') setElements(prev => prev.filter(el => !toDelete.has(el.id)));
+      else setElementsBack(prev => prev.filter(el => !toDelete.has(el.id)));
+      setSelectedIds(new Set());
       setEditingId(null);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedId, handleUndo, pushHistory, markDirty]);
+  }, [selectedIds, selectedId, handleUndo, pushHistory, markDirty]);
 
   const handleSideChange = (newSide) => {
     setSide(newSide);
-    setSelectedId(null);
+    setSelectedIds(new Set());
     setEditingId(null);
     setGuides([]);
   };
@@ -374,7 +403,7 @@ const CanvasEditor = () => {
     markDirty();
     if (side === 'front') setElements(prev => [...prev, el]);
     else setElementsBack(prev => [...prev, el]);
-    setSelectedId(el.id);
+    setSelectedIds(new Set([el.id]));
   };
 
   // ── Add elements ──────────────────────────────────────────────────────────
@@ -440,12 +469,13 @@ const CanvasEditor = () => {
   // ── Delete ────────────────────────────────────────────────────────────────
 
   const handleDeleteSelected = () => {
-    if (!selectedId) return;
+    if (selectedIds.size === 0) return;
     pushHistory();
     markDirty();
-    if (side === 'front') setElements(prev => prev.filter(el => el.id !== selectedId));
-    else setElementsBack(prev => prev.filter(el => el.id !== selectedId));
-    setSelectedId(null);
+    const toDelete = new Set(selectedIds);
+    if (side === 'front') setElements(prev => prev.filter(el => !toDelete.has(el.id)));
+    else setElementsBack(prev => prev.filter(el => !toDelete.has(el.id)));
+    setSelectedIds(new Set());
     setEditingId(null);
   };
 
@@ -480,12 +510,30 @@ const CanvasEditor = () => {
     if (editingId === id) return;
     e.stopPropagation();
     e.preventDefault();
-    setSelectedId(id);
     setEditingId(null);
-    const el = activeElementsRef.current.find(el => el.id === id);
-    if (!el) return;
+
+    // Determine new selection set
+    let newSelectedIds;
+    if (e.shiftKey) {
+      newSelectedIds = new Set(selectedIds);
+      if (newSelectedIds.has(id)) newSelectedIds.delete(id);
+      else newSelectedIds.add(id);
+    } else if (selectedIds.has(id)) {
+      newSelectedIds = new Set(selectedIds); // keep multi-selection for dragging
+    } else {
+      newSelectedIds = new Set([id]);
+    }
+    setSelectedIds(newSelectedIds);
+
+    // Build per-element origins for drag
+    const origins = {};
+    for (const sid of newSelectedIds) {
+      const el = activeElementsRef.current.find(el => el.id === sid);
+      if (el) origins[sid] = { origX: el.x, origY: el.y };
+    }
+    if (Object.keys(origins).length === 0) return;
     saveDragState();
-    draggingRef.current = { id, startX: e.clientX, startY: e.clientY, origX: el.x, origY: el.y };
+    draggingRef.current = { ids: [...newSelectedIds], startX: e.clientX, startY: e.clientY, origins };
   };
 
   const handleElementTouchStart = (e, id) => {
@@ -493,12 +541,12 @@ const CanvasEditor = () => {
     e.stopPropagation();
     e.preventDefault(); // prevents browser from generating synthetic mouse/click events after touch
     const t = e.touches[0];
-    setSelectedId(id);
+    setSelectedIds(new Set([id]));
     setEditingId(null);
     const el = activeElementsRef.current.find(el => el.id === id);
     if (!el) return;
     saveDragState();
-    draggingRef.current = { id, startX: t.clientX, startY: t.clientY, origX: el.x, origY: el.y };
+    draggingRef.current = { ids: [id], startX: t.clientX, startY: t.clientY, origins: { [id]: { origX: el.x, origY: el.y } } };
   };
 
   const handleResizeMouseDown = (e, id) => {
@@ -525,18 +573,26 @@ const CanvasEditor = () => {
     const dragging = draggingRef.current;
     const resizing = resizingRef.current;
     if (dragging) {
-      const dx = (clientX - dragging.startX) / DISPLAY_SCALE;
-      const dy = (clientY - dragging.startY) / DISPLAY_SCALE;
-      const { x, y, guides: g } = computeDragSnap(
-        activeElementsRef.current, dragging.id,
-        dragging.origX + dx, dragging.origY + dy
+      const dx = (clientX - dragging.startX) / (DISPLAY_SCALE * canvasScaleRef.current);
+      const dy = (clientY - dragging.startY) / (DISPLAY_SCALE * canvasScaleRef.current);
+      // Snap using the lead element (first in the selection)
+      const leadId = dragging.ids[0];
+      const leadOrigin = dragging.origins[leadId];
+      const { x: snappedX, y: snappedY, guides: g } = computeDragSnap(
+        activeElementsRef.current, leadId,
+        leadOrigin.origX + dx, leadOrigin.origY + dy
       );
-      updateElement(dragging.id, { x, y });
+      const actualDx = snappedX - leadOrigin.origX;
+      const actualDy = snappedY - leadOrigin.origY;
+      for (const id of dragging.ids) {
+        const origin = dragging.origins[id];
+        if (origin) updateElement(id, { x: origin.origX + actualDx, y: origin.origY + actualDy });
+      }
       setGuides(g);
     }
     if (resizing) {
-      const dx = (clientX - resizing.startX) / DISPLAY_SCALE;
-      const dy = (clientY - resizing.startY) / DISPLAY_SCALE;
+      const dx = (clientX - resizing.startX) / (DISPLAY_SCALE * canvasScaleRef.current);
+      const dy = (clientY - resizing.startY) / (DISPLAY_SCALE * canvasScaleRef.current);
       let rawW = Math.max(20, resizing.origW + dx);
       let rawH = Math.max(10, resizing.origH + dy);
       if (shiftHeldRef.current && resizing.origW > 0 && resizing.origH > 0) {
@@ -553,6 +609,13 @@ const CanvasEditor = () => {
 
   const handleMouseMove = useCallback((e) => {
     applyMove(e.clientX, e.clientY);
+    if (rubberBandRef.current && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const curX = (e.clientX - rect.left) / (DISPLAY_SCALE * canvasScaleRef.current);
+      const curY = (e.clientY - rect.top) / (DISPLAY_SCALE * canvasScaleRef.current);
+      const { startX, startY } = rubberBandRef.current;
+      setRubberBandState({ x: Math.min(startX, curX), y: Math.min(startY, curY), w: Math.abs(curX - startX), h: Math.abs(curY - startY) });
+    }
   }, [applyMove]);
 
   const handleTouchMove = useCallback((e) => {
@@ -573,6 +636,22 @@ const CanvasEditor = () => {
       preDragStateRef.current = null;
       markDirty();
     }
+    // Commit rubber-band selection
+    if (rubberBandRef.current) {
+      const band = rubberBandStateRef.current;
+      rubberBandRef.current = null;
+      rubberBandStateRef.current = null;
+      setRubberBand(null);
+      if (band && (band.w > 3 || band.h > 3)) {
+        const matched = activeElementsRef.current.filter(el => {
+          const elRight  = el.x + (el.width  ?? 0);
+          const elBottom = el.y + (el.height ?? 0);
+          return elRight > band.x && el.x < band.x + band.w &&
+                 elBottom > band.y && el.y < band.y + band.h;
+        });
+        if (matched.length > 0) setSelectedIds(new Set(matched.map(el => el.id)));
+      }
+    }
   }, [markDirty]);
 
   useEffect(() => {
@@ -589,10 +668,15 @@ const CanvasEditor = () => {
   }, [handleMouseMove, handleMouseUp, handleTouchMove]);
 
   const handleCanvasMouseDown = (e) => {
-    if (e.target === canvasRef.current) {
-      setSelectedId(null);
-      setEditingId(null);
-    }
+    if (e.target !== canvasRef.current) return;
+    setEditingId(null);
+    if (!e.shiftKey) setSelectedIds(new Set());
+    // Start rubber-band
+    const rect = canvasRef.current.getBoundingClientRect();
+    const startX = (e.clientX - rect.left) / (DISPLAY_SCALE * canvasScaleRef.current);
+    const startY = (e.clientY - rect.top) / (DISPLAY_SCALE * canvasScaleRef.current);
+    rubberBandRef.current = { startX, startY };
+    setRubberBandState({ x: startX, y: startY, w: 0, h: 0 });
   };
 
   const handleElementDoubleClick = (e, id) => {
@@ -781,6 +865,19 @@ const CanvasEditor = () => {
             )}
           </div>
 
+          {selectedIds.size > 1 && (
+            <div className="toolbar-section">
+              <span className="toolbar-label">Selection</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>{selectedIds.size} elements selected</span>
+              <button className="toolbar-btn toolbar-btn-danger" onClick={handleDeleteSelected}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <path d="M6 2H10M2 4H14M12.6667 4L12.1991 11.0129C12.129 12.065 12.0939 12.5911 11.8667 12.99C11.6666 13.3412 11.3648 13.6235 11.0011 13.7998C10.588 14 10.0607 14 9.00623 14H6.99377C5.93927 14 5.41202 14 4.99889 13.7998C4.63517 13.6235 4.33339 13.3412 4.13332 12.99C3.90607 12.5911 3.871 12.065 3.80086 11.0129L3.33333 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Delete All
+              </button>
+            </div>
+          )}
+
           {selectedEl && (
             <div className="toolbar-section">
               <span className="toolbar-label">Selected</span>
@@ -881,11 +978,13 @@ const CanvasEditor = () => {
             <p>Elements snap to each other</p>
             <p>Ctrl+C / Ctrl+V to copy &amp; paste</p>
             <p>Ctrl+Z to undo</p>
+            <p>Shift+click to multi-select</p>
+            <p>Drag empty area to select multiple</p>
           </div>
         </aside>
 
         {/* Canvas Work Area */}
-        <div className="canvas-work-area">
+        <div className="canvas-work-area" ref={workAreaRef}>
           <div className="canvas-side-tabs">
             <button className={`canvas-side-tab ${side === 'front' ? 'active' : ''}`}
               onClick={() => handleSideChange('front')}>Front</button>
@@ -893,10 +992,12 @@ const CanvasEditor = () => {
               onClick={() => handleSideChange('back')}>Back</button>
           </div>
 
+          {/* Outer wrapper holds the visual (scaled) dimensions so layout doesn't overflow */}
+          <div style={{ width: `${CARD_W * DISPLAY_SCALE * canvasScale}px`, height: `${CARD_H * DISPLAY_SCALE * canvasScale}px`, flexShrink: 0 }}>
           <div
             ref={canvasRef}
             className="canvas-card"
-            style={{ width: `${CARD_W * DISPLAY_SCALE}px`, height: `${CARD_H * DISPLAY_SCALE}px`, backgroundColor: activeBgColor }}
+            style={{ width: `${CARD_W * DISPLAY_SCALE}px`, height: `${CARD_H * DISPLAY_SCALE}px`, backgroundColor: activeBgColor, transform: canvasScale < 1 ? `scale(${canvasScale})` : undefined, transformOrigin: 'top left' }}
             onMouseDown={handleCanvasMouseDown}
           >
             {/* Snap guide lines */}
@@ -906,10 +1007,14 @@ const CanvasEditor = () => {
                 : <div key={i} className="canvas-guide canvas-guide-h" style={{ top: `${g.pos * DISPLAY_SCALE}px` }} />
             )}
 
+            {rubberBand && rubberBand.w > 0 && rubberBand.h > 0 && (
+              <div className="canvas-rubber-band" style={{ left: `${rubberBand.x * DISPLAY_SCALE}px`, top: `${rubberBand.y * DISPLAY_SCALE}px`, width: `${rubberBand.w * DISPLAY_SCALE}px`, height: `${rubberBand.h * DISPLAY_SCALE}px` }} />
+            )}
+
             {activeElements.map((el) => (
               <div
                 key={el.id}
-                className={`canvas-element ${selectedId === el.id ? 'selected' : ''}`}
+                className={`canvas-element ${selectedIds.has(el.id) ? 'selected' : ''}`}
                 style={elementBoxStyle(el)}
                 onMouseDown={(e) => handleElementMouseDown(e, el.id)}
                 onTouchStart={(e) => handleElementTouchStart(e, el.id)}
@@ -918,8 +1023,8 @@ const CanvasEditor = () => {
               >
                 {renderElementContent(el)}
 
-                {/* Resize handle — all element types */}
-                {selectedId === el.id && (
+                {/* Resize handle — only for single selection */}
+                {selectedIds.size === 1 && selectedIds.has(el.id) && (
                   <div
                     className="canvas-resize-handle"
                     onMouseDown={(e) => handleResizeMouseDown(e, el.id)}
@@ -929,6 +1034,7 @@ const CanvasEditor = () => {
               </div>
             ))}
           </div>
+          </div>{/* end scale wrapper */}
 
           <p className="canvas-size-hint">3.5&quot; × 2&quot; &mdash; drag to move &bull; blue handle to resize &bull; elements snap to each other</p>
         </div>
