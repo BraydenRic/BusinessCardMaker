@@ -1,46 +1,40 @@
 # Business Card Maker
 
-A professional, full-stack React application for creating and managing stunning business cards. Features Google authentication, cloud storage, 6 unique templates, and print-ready exports with a sleek dark theme.
+A full-stack React application for creating and managing professional business cards. Supports two creation modes: a form-based template editor and a freeform canvas editor. Cards are saved to the cloud and can be printed at standard business card dimensions.
 
 ## Features
 
-### Core Functionality
-- **Google Authentication**: Secure sign-in with Firebase Auth
-- **Cloud Storage**: Save unlimited business cards to Firestore
-- **6 Professional Templates**: Modern, Minimal, Bold, Elegant, Tech, and Creative designs
-- **Real-time Preview**: See changes instantly as you customize
-- **Print Ready**: Export in standard 3.5" × 2" format
-- **Dark Theme**: Eye-friendly professional design with smooth animations
+- **Google Authentication** via Firebase Auth
+- **Cloud Storage** with Cloud Firestore — cards persist across devices
+- **Template Editor** — fill in your details and choose from 6 professional templates with live preview
+- **Canvas Editor** — drag-and-drop text, shapes, images, and QR codes on a freeform 3.5" x 2" canvas
+- **Start from Template** — open any of the 6 templates in the canvas editor as a starting point
+- **Front and Back** — both editors support designing the front and back of the card
+- **QR Code Generation** — generate QR codes from any URL or text and place them on your card
+- **3D Card Flip Preview** — interactive preview modal with drag-to-rotate
+- **Print Export** — print-ready layout at 3.5" x 2" (standard business card size)
+- **Undo / Snap Guides** — canvas editor includes undo history and smart alignment snapping
 
-### User Experience
-- **Landing Page**: Beautiful template gallery with live previews
-- **Dashboard**: Manage all your saved business cards
-- **Editor**: Intuitive form-based customization with live preview
-- **Mobile Responsive**: Works perfectly on all devices
-- **Smooth Animations**: Carefully crafted micro-interactions
+## Stack
 
-## React & Full-Stack Concepts
-
-This project demonstrates:
-
-- **Authentication**: Firebase Auth with Google OAuth
-- **Database Integration**: Firestore for CRUD operations
-- **Custom Hooks**: `useBusinessCards`, `useAuth`
-- **Context API**: Global auth state management
-- **React Router**: Multi-page navigation
-- **Component Composition**: Reusable, modular design
-- **State Management**: Complex form handling
-- **Async Operations**: Loading states, error handling
+| Layer | Technology |
+|-------|-----------|
+| Framework | React 19 |
+| Routing | React Router v7 |
+| Build tool | Vite 7 |
+| Styling | Vanilla CSS |
+| Auth | Firebase Auth (Google OAuth 2.0) |
+| Database | Cloud Firestore |
+| Hosting | Vercel |
 
 ## Prerequisites
 
-1. **Node.js** (v16+)
-2. **Firebase Account** (free tier works)
-3. **Google Account** (for testing auth)
+- Node.js v20.19 or v22.12+ (required by Vite 7)
+- A Firebase project with Google Auth and Firestore enabled
 
-## Setup Instructions
+## Setup
 
-### 1. Install Dependencies
+### 1. Install dependencies
 
 ```bash
 npm install
@@ -48,14 +42,45 @@ npm install
 
 ### 2. Configure Firebase
 
-Follow the detailed instructions in `FIREBASE_SETUP.md`:
+Create a project at [console.firebase.google.com](https://console.firebase.google.com), then:
 
-1. Create a Firebase project
-2. Enable Google Authentication
-3. Create Firestore database
-4. Copy your config to `src/firebase/config.js`
+1. Enable **Google** as a sign-in provider under Authentication
+2. Create a **Firestore** database in production mode
+3. Add these Firestore security rules:
 
-### 3. Run Development Server
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
+
+4. Copy your Firebase config into `src/firebase/config.js`:
+
+```js
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+
+const firebaseConfig = {
+  apiKey: "...",
+  authDomain: "...",
+  projectId: "...",
+  storageBucket: "...",
+  messagingSenderId: "...",
+  appId: "..."
+};
+
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+```
+
+### 3. Run the dev server
 
 ```bash
 npm run dev
@@ -68,81 +93,65 @@ Visit `http://localhost:5173`
 ```
 src/
 ├── components/
-│   └── BusinessCard/        # Card templates and rendering
+│   ├── BusinessCard/
+│   │   ├── BusinessCard.jsx      # Template card renderer
+│   │   ├── CardBack.jsx          # Card back renderer
+│   │   ├── CardFlipModal.jsx     # 3D interactive preview modal
+│   │   └── templates.js          # Template definitions and styles
+│   ├── Canvas/
+│   │   └── CanvasPreview.jsx     # Read-only canvas card renderer
+│   └── Shared/
+│       ├── ConfirmLeaveModal.jsx  # Unsaved changes guard
+│       ├── ExportPanel.jsx        # Print/export logic
+│       ├── Navbar.jsx
+│       └── SaveStatus.jsx
 ├── context/
-│   └── AuthContext.jsx      # Firebase auth state
+│   └── AuthContext.jsx            # Firebase auth state
 ├── firebase/
-│   └── config.js            # Firebase configuration
+│   └── config.js                  # Firebase initialization
 ├── hooks/
-│   └── useBusinessCards.js  # Firestore CRUD operations
+│   ├── useBusinessCards.js        # Firestore CRUD
+│   └── useDebounce.js
 ├── pages/
-│   ├── Landing.jsx          # Template gallery & hero
-│   ├── Dashboard.jsx        # Manage saved cards
-│   └── Editor.jsx           # Create/edit cards
-└── App.jsx                  # Router setup
+│   ├── Landing.jsx                # Hero and template gallery
+│   ├── Dashboard.jsx              # Saved cards management
+│   ├── Editor.jsx                 # Form-based template editor
+│   └── CanvasEditor.jsx           # Freeform canvas editor
+└── App.jsx                        # Router and protected routes
 ```
 
-## Available Templates
+## Templates
 
-1. **Modern Professional** - Gradient accents, clean layout
-2. **Minimal Clean** - Black & white simplicity
-3. **Bold Gradient** - Eye-catching colors
-4. **Elegant Dark** - Sophisticated gold accents
-5. **Tech Blue** - Developer-friendly monospace
-6. **Creative Colorful** - Playful and artistic
-
-## Security
-
-- Firestore rules restrict users to their own data
-- Google OAuth for secure authentication
-- No API keys exposed in client code
+| Name | Style |
+|------|-------|
+| Modern Professional | Dark background, blue accents |
+| Minimal Clean | White, black and grey |
+| Bold Gradient | Dark with amber/red accents |
+| Elegant Dark | Dark with gold accents |
+| Tech Blue | Dark, teal, monospace font |
+| Creative Colorful | Dark with pink accents |
 
 ## How to Use
 
-1. **Sign In**: Click "Sign in with Google" on landing page
-2. **Choose Template**: Browse and select from 6 templates
-3. **Customize**: Fill in your information in the editor
-4. **Save**: Store to your Firebase account
-5. **Print**: Export print-ready cards anytime
-6. **Manage**: View, edit, or delete from dashboard
+### Template editor
+1. Sign in with Google
+2. Click **New Card** on the dashboard
+3. Select a template and fill in your details
+4. Customize colors if desired
+5. Save — the card appears on your dashboard
+6. Open the card to print or view the 3D flip preview
 
-## Printing Your Cards
+### Canvas editor
+1. Click **Custom Canvas** on the dashboard
+2. Choose **Blank Canvas** or pick a template as a starting point
+3. Add text, shapes, images, or QR codes from the toolbar
+4. Drag to move, use the blue handle to resize, double-click text to edit
+5. Use Ctrl+Z to undo, Backspace to delete the selected element
+6. Switch between Front and Back tabs to design both sides
+7. Save and print from the dashboard
 
-1. Open a saved card from dashboard
-2. Click "Print" button
-3. Print settings:
-   - Paper size: Letter (8.5" × 11")
-   - Margins: None
-   - Scale: 100%
-   - Multiple cards per page supported
+## Security
 
-## Technologies
-
-- **Frontend**: React 19, React Router
-- **Build Tool**: Vite 7
-- **Styling**: CSS3 (vanilla, no frameworks)
-- **Backend**: Firebase (Auth + Firestore)
-- **Authentication**: Google OAuth 2.0
-- **Database**: Cloud Firestore
-
-## Learning Outcomes
-
-This project teaches:
-- Full-stack React development
-- Firebase integration
-- OAuth authentication flows
-- NoSQL database design
-- CRUD operations
-- Secure client-side apps
-- Modern React patterns (hooks, context, router)
-
-## Future Enhancements
-
-- [ ] QR code generation
-- [ ] Multiple card designs per user
-- [ ] Export as PDF
-- [ ] Batch printing
-- [ ] Team collaboration
-- [ ] Custom color themes
-- [ ] Image upload for logos
-- [ ] Social media links
+- Firestore rules enforce per-user data isolation
+- Google OAuth handles authentication — no passwords stored
+- Firebase config keys are client-safe (restricted by domain in the Firebase console)
