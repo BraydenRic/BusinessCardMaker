@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import BusinessCard from '../components/BusinessCard/BusinessCard';
 import { useNavigate, useSearchParams, useBlocker, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBusinessCards } from '../hooks/useBusinessCards';
@@ -6,6 +7,11 @@ import QRCode from 'qrcode';
 import ConfirmLeaveModal from '../components/Shared/ConfirmLeaveModal';
 import { templates } from '../components/BusinessCard/templates';
 import './CanvasEditor.css';
+
+const MEASURE_DATA = {
+  name: 'Your Name', title: 'Your Title', company: 'Company Name',
+  email: 'email@example.com', phone: '+1 (555) 123-4567', website: 'www.yourwebsite.com',
+};
 
 // Card logical size is 350×200; canvas renders at 2× for crisp display on high-DPI screens
 const DISPLAY_SCALE = 2;
@@ -301,6 +307,8 @@ const CanvasEditor = () => {
   const [guides, setGuides] = useState([]);
   const [qrText, setQrText] = useState('');
   const [showQrInput, setShowQrInput] = useState(false);
+  const [shouldMeasure, setShouldMeasure] = useState(false);
+  const measureRef = useRef(null);
 
   const shiftHeldRef = useRef(false);
   const clipboardRef = useRef(null);
@@ -423,15 +431,94 @@ const CanvasEditor = () => {
         setElementsBack(existing.elementsBack || []);
       }
     } else if (templateParam) {
-      hasInitializedRef.current = true;
-      const { bgColor: tBg, bgColorBack: tBgBack, elements: tEls } = buildTemplateElements(templateParam);
-      setBgColor(tBg);
-      setBgColorBack(tBgBack);
-      setElements(tEls);
+      setShouldMeasure(true);
+      // hasInitializedRef is set by the measurement effect after DOM measurement completes
     } else {
       hasInitializedRef.current = true; // blank canvas — nothing to load
     }
   }, [cardId, templateParam, cards, user, navigate, location.state]);
+
+  // When starting from a template picker (templateParam), render a hidden BusinessCard and measure
+  // the actual DOM positions of each element. This gives pixel-perfect matching with the live preview
+  // instead of trying to manually reproduce CSS flexbox layout with hardcoded coordinates.
+  useEffect(() => {
+    if (!shouldMeasure || !measureRef.current || hasInitializedRef.current) return;
+    const container = measureRef.current;
+    const tpl = templates.find(t => t.id === templateParam) || templates[0];
+    const s = tpl.style;
+    const inner = container.querySelector('.business-card-wrapper > div');
+    if (!inner) return;
+
+    const base = inner.getBoundingClientRect();
+    const getPos = (el) => {
+      const r = el.getBoundingClientRect();
+      return { x: Math.round(r.left - base.left), y: Math.round(r.top - base.top), width: Math.round(r.width), height: Math.round(r.height) };
+    };
+    const getField = (field) => container.querySelector(`[data-canvas-field="${field}"]`);
+
+    const makeText = (field, text, color, bold = false, italic = false) => {
+      const el = getField(field);
+      if (!el) return null;
+      const p = getPos(el);
+      const cs = window.getComputedStyle(el);
+      const fontSize = Math.round(parseFloat(cs.fontSize));
+      const rawAlign = cs.textAlign;
+      const textAlign = rawAlign === 'start' ? 'left' : rawAlign === 'end' ? 'right' : (rawAlign || 'left');
+      return { id: genId(), type: 'text', ...p, text, fontSize, color, bold, italic, textAlign };
+    };
+
+    const makeShape = (field, fillColor, strokeColor = '#ffffff', strokeWidth = 0, shapeType = 'rect') => {
+      const el = getField(field);
+      if (!el) return null;
+      const p = getPos(el);
+      return { id: genId(), type: 'shape', shapeType, ...p, fillColor, strokeColor, strokeWidth };
+    };
+
+    const els = [];
+    const push = (el) => { if (el) els.push(el); };
+
+    // Background shapes first (renders behind text)
+    push(makeShape('border', s.backgroundColor, s.primaryColor, 2));
+    push(makeShape('header-bg', s.primaryColor));
+    push(makeShape('blob', s.primaryColor, '#ffffff', 0, 'circle'));
+
+    // Tech corner = two rects built from the corner element's bounding box
+    const cornerEl = getField('corner');
+    if (cornerEl) {
+      const p = getPos(cornerEl);
+      els.push({ id: genId(), type: 'shape', shapeType: 'rect', x: p.x, y: p.y, width: p.width, height: 3, fillColor: s.primaryColor, strokeColor: '#ffffff', strokeWidth: 0 });
+      els.push({ id: genId(), type: 'shape', shapeType: 'rect', x: p.x + p.width - 3, y: p.y, width: 3, height: p.height, fillColor: s.primaryColor, strokeColor: '#ffffff', strokeWidth: 0 });
+    }
+
+    // Name
+    const nameBold = templateParam !== 'elegant';
+    const nameColor = templateParam === 'bold' ? '#ffffff' : s.primaryColor;
+    push(makeText('name', 'Your Name', nameColor, nameBold));
+
+    // Dividers / decorative lines
+    push(makeShape('divider', s.primaryColor));
+    push(makeShape('line', s.primaryColor));
+
+    // Title
+    const titleColor = templateParam === 'modern' ? s.accentColor : s.secondaryColor;
+    push(makeText('title', 'Your Title', titleColor, templateParam === 'bold', templateParam === 'elegant'));
+
+    // Company
+    const companyColor = ['elegant', 'tech'].includes(templateParam) ? s.accentColor : s.textColor;
+    push(makeText('company', 'Company Name', companyColor, templateParam === 'modern'));
+
+    // Contacts (tech gets $ prefix to match the BusinessCard rendering)
+    const pre = templateParam === 'tech' ? '$ ' : '';
+    push(makeText('email',   `${pre}email@example.com`,    s.textColor));
+    push(makeText('phone',   `${pre}+1 (555) 123-4567`,   s.textColor));
+    push(makeText('website', `${pre}www.yourwebsite.com`,  s.textColor));
+
+    hasInitializedRef.current = true;
+    setBgColor(s.backgroundColor);
+    setBgColorBack(s.backgroundColor);
+    setElements(els);
+    setShouldMeasure(false);
+  }, [shouldMeasure, templateParam]);
 
   // Keyboard shortcuts: Ctrl+Z undo, Ctrl+C copy, Ctrl+V paste, Backspace/Delete remove
   useEffect(() => {
@@ -1139,6 +1226,13 @@ const CanvasEditor = () => {
           <p className="canvas-size-hint">3.5&quot; × 2&quot; &mdash; drag to move &bull; blue handle to resize &bull; elements snap to each other</p>
         </div>
       </div>
+
+      {/* Hidden off-screen BusinessCard used to measure exact element positions for canvas initialization */}
+      {shouldMeasure && templateParam && (
+        <div ref={measureRef} style={{ position: 'fixed', top: '-9999px', left: '-9999px', visibility: 'hidden' }}>
+          <BusinessCard data={MEASURE_DATA} templateId={templateParam} scale={1} />
+        </div>
+      )}
 
       {blocker.state === 'blocked' && (
         <ConfirmLeaveModal
