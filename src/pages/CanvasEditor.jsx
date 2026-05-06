@@ -123,9 +123,11 @@ const buildTemplateElements = (templateId, cardData = {}) => {
   const tc = cardData.cardTextColor      || tpl.style.textColor;
   const ac = cardData.cardAccentColor    || tpl.style.accentColor;
 
-  // When cardData has real values, only add elements for non-empty fields.
-  // When used without cardData (blank canvas from template picker), show placeholders.
-  const hasData = cardData.name !== undefined;
+  // Only treat cardData as "real" when at least one text field has a value.
+  // An all-empty card (e.g. opened from Editor before filling anything in) should
+  // show placeholders, matching the Custom Canvas starter path.
+  const hasData = !!(cardData.name || cardData.title || cardData.company ||
+                     cardData.email || cardData.phone || cardData.website);
   const val = (field, placeholder) => {
     if (hasData) return cardData[field] || null;
     return placeholder;
