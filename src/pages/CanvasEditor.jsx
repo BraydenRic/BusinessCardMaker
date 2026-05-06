@@ -762,35 +762,49 @@ const CanvasEditor = () => {
     if (dragging) {
       const dx = (clientX - dragging.startX) / (DISPLAY_SCALE * canvasScaleRef.current);
       const dy = (clientY - dragging.startY) / (DISPLAY_SCALE * canvasScaleRef.current);
-      // Snap using the lead element (first in the selection)
       const leadId = dragging.ids[0];
       const leadOrigin = dragging.origins[leadId];
-      const { x: snappedX, y: snappedY, guides: g } = computeDragSnap(
-        activeElementsRef.current, leadId,
-        leadOrigin.origX + dx, leadOrigin.origY + dy
-      );
-      const actualDx = snappedX - leadOrigin.origX;
-      const actualDy = snappedY - leadOrigin.origY;
+      let actualDx, actualDy;
+      if (shiftHeldRef.current) {
+        // Shift held: snap to element edges and canvas guides
+        const { x: snappedX, y: snappedY, guides: g } = computeDragSnap(
+          activeElementsRef.current, leadId,
+          leadOrigin.origX + dx, leadOrigin.origY + dy
+        );
+        actualDx = snappedX - leadOrigin.origX;
+        actualDy = snappedY - leadOrigin.origY;
+        setGuides(g);
+      } else {
+        // Free move — no snapping
+        actualDx = dx;
+        actualDy = dy;
+        setGuides([]);
+      }
       for (const id of dragging.ids) {
         const origin = dragging.origins[id];
         if (origin) updateElement(id, { x: origin.origX + actualDx, y: origin.origY + actualDy });
       }
-      setGuides(g);
     }
     if (resizing) {
       const dx = (clientX - resizing.startX) / (DISPLAY_SCALE * canvasScaleRef.current);
       const dy = (clientY - resizing.startY) / (DISPLAY_SCALE * canvasScaleRef.current);
       let rawW = Math.max(20, resizing.origW + dx);
       let rawH = Math.max(10, resizing.origH + dy);
-      if (shiftHeldRef.current && resizing.origW > 0 && resizing.origH > 0) {
-        // Lock aspect ratio: use whichever axis has scaled more to drive both dimensions
-        const scale = Math.max(rawW / resizing.origW, rawH / resizing.origH);
-        rawW = Math.max(20, resizing.origW * scale);
-        rawH = Math.max(10, resizing.origH * scale);
+      if (shiftHeldRef.current) {
+        if (resizing.origW > 0 && resizing.origH > 0) {
+          // Lock aspect ratio
+          const scale = Math.max(rawW / resizing.origW, rawH / resizing.origH);
+          rawW = Math.max(20, resizing.origW * scale);
+          rawH = Math.max(10, resizing.origH * scale);
+        }
+        // Snap resize to element edges
+        const { w, h, guides: g } = computeResizeSnap(activeElementsRef.current, resizing.id, rawW, rawH);
+        updateElement(resizing.id, { width: w, height: h });
+        setGuides(g);
+      } else {
+        updateElement(resizing.id, { width: rawW, height: rawH });
+        setGuides([]);
       }
-      const { w, h, guides: g } = computeResizeSnap(activeElementsRef.current, resizing.id, rawW, rawH);
-      updateElement(resizing.id, { width: w, height: h });
-      setGuides(g);
     }
   }, [updateElement]);
 
@@ -1161,8 +1175,8 @@ const CanvasEditor = () => {
             <p>Drag to move elements</p>
             <p>Double-click text to edit</p>
             <p>Backspace to delete selected</p>
-            <p>Shift+drag to resize proportionally</p>
-            <p>Elements snap to each other</p>
+            <p>Shift+drag to snap &amp; resize proportionally</p>
+            <p>Hold Shift while dragging to snap to elements</p>
             <p>Ctrl+C / Ctrl+V to copy &amp; paste</p>
             <p>Ctrl+Z to undo</p>
             <p>Shift+click to multi-select</p>
@@ -1223,7 +1237,7 @@ const CanvasEditor = () => {
           </div>
           </div>{/* end scale wrapper */}
 
-          <p className="canvas-size-hint">3.5&quot; × 2&quot; &mdash; drag to move &bull; blue handle to resize &bull; elements snap to each other</p>
+          <p className="canvas-size-hint">3.5&quot; × 2&quot; &mdash; drag to move &bull; blue handle to resize &bull; hold Shift to snap</p>
         </div>
       </div>
 
