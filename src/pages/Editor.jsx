@@ -120,6 +120,12 @@ const Editor = () => {
     navigate('/dashboard');
   };
 
+  const handleOpenInCanvas = () => {
+    navigate('/canvas', {
+      state: { fromEditor: true, templateId: selectedTemplate, cardData },
+    });
+  };
+
   const buildQr = async (url, dotColor, bgColor) => {
     const dataUrl = await QRCode.toDataURL(url.trim(), {
       width: 200, margin: 1,
@@ -208,6 +214,13 @@ const Editor = () => {
         <div className="header-actions">
           <button onClick={handleCancel} className="btn-secondary">
             Cancel
+          </button>
+          <button onClick={handleOpenInCanvas} className="btn-secondary" title="Convert this card to the free-form canvas editor">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ marginRight: '0.35rem' }}>
+              <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M5 8H11M8 5V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+            Open in Canvas
           </button>
           <button onClick={handleSave} className="btn-primary" disabled={saving}>
             {saving ? 'Saving...' : 'Save Card'}

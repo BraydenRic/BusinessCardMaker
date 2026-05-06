@@ -38,6 +38,12 @@ const Dashboard = () => {
     }
   };
 
+  const handleOpenInCanvas = (card) => {
+    navigate('/canvas', {
+      state: { fromEditor: true, templateId: card.template, cardData: card },
+    });
+  };
+
   const handleDeleteCard = async (cardId) => {
     if (window.confirm('Are you sure you want to delete this card?')) {
       try {
@@ -403,6 +409,19 @@ const Dashboard = () => {
                     </svg>
                     Edit
                   </button>
+                  {card.type !== 'canvas' && (
+                    <button
+                      onClick={() => handleOpenInCanvas(card)}
+                      className="action-btn canvas-convert"
+                      title="Open in Canvas editor for free-form editing"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5"/>
+                        <path d="M5 8H11M8 5V11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                      Canvas
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDuplicateCard(card)}
                     className="action-btn duplicate"

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate, useSearchParams, useBlocker } from 'react-router-dom';
+import { useNavigate, useSearchParams, useBlocker, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useBusinessCards } from '../hooks/useBusinessCards';
 import QRCode from 'qrcode';
@@ -113,10 +113,22 @@ function computeResizeSnap(els, resizingId, rawW, rawH) {
   return { w, h, guides };
 }
 
-const buildTemplateElements = (templateId) => {
+// cardData is optional; when provided the real field values replace the placeholder strings.
+const buildTemplateElements = (templateId, cardData = {}) => {
   const tpl = templates.find(t => t.id === templateId) || templates[0];
-  const { backgroundColor: bg, primaryColor: pc, secondaryColor: sc,
-          textColor: tc, accentColor: ac } = tpl.style;
+  const bg = cardData.cardBgColor       || tpl.style.backgroundColor;
+  const pc = cardData.cardPrimaryColor  || tpl.style.primaryColor;
+  const sc = cardData.cardSecondaryColor|| tpl.style.secondaryColor;
+  const tc = cardData.cardTextColor     || tpl.style.textColor;
+  const ac = cardData.cardAccentColor   || tpl.style.accentColor;
+
+  const name    = cardData.name    || 'Your Name';
+  const title   = cardData.title   || 'Your Title';
+  const company = cardData.company || 'Company Name';
+  const email   = cardData.email   || 'email@example.com';
+  const phone   = cardData.phone   || '+1 (555) 123-4567';
+  const website = cardData.website || 'www.yourwebsite.com';
+
   const mkId = () => `el-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   const txt = (x, y, w, h, text, fontSize, color, bold = false, italic = false) =>
     ({ id: mkId(), type: 'text', x, y, width: w, height: h, text, fontSize, color, bold, italic });
@@ -127,59 +139,59 @@ const buildTemplateElements = (templateId) => {
 
   const layouts = {
     modern: [
-      txt(24, 20, 220, 28, 'Your Name',           22, pc, true),
-      txt(24, 50, 200, 18, 'Your Title',           13, ac),
+      txt(24, 20, 220, 28, name,    22, pc, true),
+      txt(24, 50, 200, 18, title,   13, ac),
       rect(24, 73, 110, 3, pc),
-      txt(24, 84, 200, 18, 'Company Name',         12, tc, true),
-      txt(24, 108, 240, 16, 'email@example.com',   11, ac),
-      txt(24, 126, 240, 16, '+1 (555) 123-4567',   11, ac),
-      txt(24, 144, 240, 16, 'www.yourwebsite.com', 11, ac),
+      txt(24, 84, 200, 18, company, 12, tc, true),
+      txt(24, 108, 240, 16, email,  11, ac),
+      txt(24, 126, 240, 16, phone,  11, ac),
+      txt(24, 144, 240, 16, website, 11, ac),
     ],
     minimal: [
-      txt(24, 74, 128, 26, 'Your Name',            18, tc, true),
-      txt(24, 102, 128, 18, 'Your Title',          12, ac),
+      txt(24, 74, 128, 26, name,    18, tc, true),
+      txt(24, 102, 128, 18, title,  12, ac),
       rect(162, 20, 2, 160, pc),
-      txt(176, 62, 156, 16, 'email@example.com',   11, tc),
-      txt(176, 80, 156, 16, '+1 (555) 123-4567',   11, tc),
-      txt(176, 98, 156, 16, 'www.yourwebsite.com', 11, tc),
-      txt(176, 116, 156, 16, 'Company Name',       11, ac),
+      txt(176, 62, 156, 16, email,  11, tc),
+      txt(176, 80, 156, 16, phone,  11, tc),
+      txt(176, 98, 156, 16, website, 11, tc),
+      txt(176, 116, 156, 16, company, 11, ac),
     ],
     bold: [
       rect(0, 0, 350, 76, pc),
-      txt(24, 14, 260, 30, 'Your Name',            22, '#ffffff', true),
-      txt(24, 48, 220, 20, 'Your Title',           13, '#ffffff'),
-      txt(24, 94, 220, 20, 'Company Name',         13, tc, true),
-      txt(24, 118, 260, 16, 'email@example.com',   11, tc),
-      txt(24, 136, 260, 16, '+1 (555) 123-4567',   11, tc),
-      txt(24, 154, 260, 16, 'www.yourwebsite.com', 11, tc),
+      txt(24, 14, 260, 30, name,    22, '#ffffff', true),
+      txt(24, 48, 220, 20, title,   13, '#ffffff'),
+      txt(24, 94, 220, 20, company, 13, tc, true),
+      txt(24, 118, 260, 16, email,  11, tc),
+      txt(24, 136, 260, 16, phone,  11, tc),
+      txt(24, 154, 260, 16, website, 11, tc),
     ],
     elegant: [
       { id: mkId(), type: 'shape', shapeType: 'rect', x: 10, y: 10, width: 330, height: 180, fillColor: bg, strokeColor: pc, strokeWidth: 2 },
-      txt(80, 52, 190, 26, 'Your Name',            20, tc),
+      txt(80, 52, 190, 26, name,    20, tc),
       rect(145, 82, 60, 1, pc),
-      txt(100, 90, 150, 18, 'Your Title',          12, ac, false, true),
-      txt(100, 110, 150, 16, 'Company Name',       12, tc),
-      txt(70, 138, 210, 14, 'email@example.com',   10, ac),
-      txt(70, 154, 210, 14, '+1 (555) 123-4567',   10, ac),
+      txt(100, 90, 150, 18, title,  12, ac, false, true),
+      txt(100, 110, 150, 16, company, 12, tc),
+      txt(70, 138, 210, 14, email,  10, ac),
+      txt(70, 154, 210, 14, phone,  10, ac),
     ],
     tech: [
       rect(314, 0, 36, 3, pc),
       rect(347, 0, 3, 36, pc),
-      txt(24, 18, 260, 24, '> Your Name',          18, pc, true),
-      txt(24, 44, 260, 18, '// Your Title',        12, sc),
-      txt(24, 64, 220, 16, 'Company Name',         12, ac),
-      txt(24, 92, 300, 16, '$ email@example.com',  11, tc),
-      txt(24, 110, 300, 16, '$ +1 (555) 123-4567', 11, tc),
-      txt(24, 128, 300, 16, '$ www.yourwebsite.com', 11, tc),
+      txt(24, 18, 260, 24, `> ${name}`,    18, pc, true),
+      txt(24, 44, 260, 18, `// ${title}`,  12, sc),
+      txt(24, 64, 220, 16, company,        12, ac),
+      txt(24, 92, 300, 16, `$ ${email}`,   11, tc),
+      txt(24, 110, 300, 16, `$ ${phone}`,  11, tc),
+      txt(24, 128, 300, 16, `$ ${website}`, 11, tc),
     ],
     creative: [
       circle(250, -50, 150, 150, sc),
-      txt(24, 26, 240, 30, 'Your Name',            22, tc, true),
-      txt(24, 58, 240, 20, 'Your Title',           13, pc),
-      txt(24, 80, 220, 18, 'Company Name',         12, ac),
-      txt(24, 110, 280, 16, 'email@example.com',   11, tc),
-      txt(24, 128, 280, 16, '+1 (555) 123-4567',   11, tc),
-      txt(24, 146, 280, 16, 'www.yourwebsite.com', 11, tc),
+      txt(24, 26, 240, 30, name,    22, tc, true),
+      txt(24, 58, 240, 20, title,   13, pc),
+      txt(24, 80, 220, 18, company, 12, ac),
+      txt(24, 110, 280, 16, email,  11, tc),
+      txt(24, 128, 280, 16, phone,  11, tc),
+      txt(24, 146, 280, 16, website, 11, tc),
     ],
   };
 
@@ -190,9 +202,40 @@ const buildTemplateElements = (templateId) => {
   };
 };
 
+// Convert template card back-side data (logo, QR, tagline) into canvas image/text elements.
+const buildBackElementsFromCardData = (cardData, templateId) => {
+  const tpl = templates.find(t => t.id === templateId) || templates[0];
+  const pc = cardData.cardPrimaryColor || tpl.style.primaryColor;
+  const hasLogo = !!cardData.backLogo;
+  const hasQr   = !!cardData.backQr;
+  const els = [];
+
+  if (hasLogo && hasQr) {
+    els.push({ id: genId(), type: 'image', x: 85,  y: 60,  width: 100, height: 60, src: cardData.backLogo });
+    els.push({ id: genId(), type: 'image', x: 240, y: 148, width: 54,  height: 54, src: cardData.backQr });
+  } else if (hasLogo) {
+    els.push({ id: genId(), type: 'image', x: 125, y: 70,  width: 100, height: 60, src: cardData.backLogo });
+  } else if (hasQr) {
+    els.push({ id: genId(), type: 'image', x: 135, y: 60,  width: 80,  height: 80, src: cardData.backQr });
+  }
+
+  if (cardData.backTagline) {
+    const tagY = (hasLogo || hasQr) ? 155 : 88;
+    els.push({
+      id: genId(), type: 'text',
+      x: 35, y: tagY, width: 280, height: 30,
+      text: cardData.backTagline,
+      fontSize: 14, color: pc, bold: false, italic: false, textAlign: 'center',
+    });
+  }
+
+  return els;
+};
+
 const CanvasEditor = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { cards, createCard, updateCard } = useBusinessCards();
   const cardId = searchParams.get('id');
@@ -311,6 +354,21 @@ const CanvasEditor = () => {
     if (!user) { navigate('/'); return; }
     if (hasInitializedRef.current) return;
 
+    // Conversion from a template card: navigate('/canvas', { state: { fromEditor, templateId, cardData } })
+    const fromState = location.state?.fromEditor;
+    if (fromState) {
+      hasInitializedRef.current = true;
+      const { templateId, cardData } = location.state;
+      const { bgColor: tBg, bgColorBack: tBgBack, elements: tEls } = buildTemplateElements(templateId, cardData);
+      const backEls = buildBackElementsFromCardData(cardData, templateId);
+      setCardName(cardData.cardLabel || cardData.name || '');
+      setBgColor(tBg);
+      setBgColorBack(tBgBack);
+      setElements(tEls);
+      setElementsBack(backEls);
+      return;
+    }
+
     if (cardId) {
       if (cards.length === 0) return; // wait for cards to finish loading
       const existing = cards.find(c => c.id === cardId);
@@ -331,7 +389,7 @@ const CanvasEditor = () => {
     } else {
       hasInitializedRef.current = true; // blank canvas — nothing to load
     }
-  }, [cardId, templateParam, cards, user, navigate]);
+  }, [cardId, templateParam, cards, user, navigate, location.state]);
 
   // Keyboard shortcuts: Ctrl+Z undo, Ctrl+C copy, Ctrl+V paste, Backspace/Delete remove
   useEffect(() => {

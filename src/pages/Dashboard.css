@@ -358,6 +358,11 @@
   color: #ef4444;
 }
 
+.action-btn.canvas-convert:hover {
+  border-color: #a78bfa;
+  color: #a78bfa;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .cards-grid {
