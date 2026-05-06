@@ -113,93 +113,128 @@ function computeResizeSnap(els, resizingId, rawW, rawH) {
   return { w, h, guides };
 }
 
-// cardData is optional; when provided the real field values replace the placeholder strings.
+// Converts a template card into canvas elements matching the exact colors/layout of BusinessCard.jsx.
+// cardData is optional; when provided real field values are used and empty fields are omitted.
 const buildTemplateElements = (templateId, cardData = {}) => {
   const tpl = templates.find(t => t.id === templateId) || templates[0];
-  const bg = cardData.cardBgColor       || tpl.style.backgroundColor;
-  const pc = cardData.cardPrimaryColor  || tpl.style.primaryColor;
-  const sc = cardData.cardSecondaryColor|| tpl.style.secondaryColor;
-  const tc = cardData.cardTextColor     || tpl.style.textColor;
-  const ac = cardData.cardAccentColor   || tpl.style.accentColor;
+  const bg = cardData.cardBgColor        || tpl.style.backgroundColor;
+  const pc = cardData.cardPrimaryColor   || tpl.style.primaryColor;
+  const sc = cardData.cardSecondaryColor || tpl.style.secondaryColor;
+  const tc = cardData.cardTextColor      || tpl.style.textColor;
+  const ac = cardData.cardAccentColor    || tpl.style.accentColor;
 
-  const name    = cardData.name    || 'Your Name';
-  const title   = cardData.title   || 'Your Title';
-  const company = cardData.company || 'Company Name';
-  const email   = cardData.email   || 'email@example.com';
-  const phone   = cardData.phone   || '+1 (555) 123-4567';
-  const website = cardData.website || 'www.yourwebsite.com';
+  // When cardData has real values, only add elements for non-empty fields.
+  // When used without cardData (blank canvas from template picker), show placeholders.
+  const hasData = cardData.name !== undefined;
+  const val = (field, placeholder) => {
+    if (hasData) return cardData[field] || null;
+    return placeholder;
+  };
+
+  const name    = val('name',    'Your Name');
+  const title   = val('title',   'Your Title');
+  const company = val('company', 'Company Name');
+  const email   = val('email',   'email@example.com');
+  const phone   = val('phone',   '+1 (555) 123-4567');
+  const website = val('website', 'www.yourwebsite.com');
 
   const mkId = () => `el-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  const txt = (x, y, w, h, text, fontSize, color, bold = false, italic = false) =>
-    ({ id: mkId(), type: 'text', x, y, width: w, height: h, text, fontSize, color, bold, italic });
+  // textAlign added as optional last param
+  const txt = (x, y, w, h, text, fontSize, color, bold = false, italic = false, textAlign = 'left') =>
+    ({ id: mkId(), type: 'text', x, y, width: w, height: h, text, fontSize, color, bold, italic, textAlign });
   const rect = (x, y, w, h, fillColor) =>
     ({ id: mkId(), type: 'shape', shapeType: 'rect', x, y, width: w, height: h, fillColor, strokeColor: '#ffffff', strokeWidth: 0 });
   const circle = (x, y, w, h, fillColor) =>
     ({ id: mkId(), type: 'shape', shapeType: 'circle', x, y, width: w, height: h, fillColor, strokeColor: '#ffffff', strokeWidth: 0 });
 
-  const layouts = {
-    modern: [
-      txt(24, 20, 220, 28, name,    22, pc, true),
-      txt(24, 50, 200, 18, title,   13, ac),
-      rect(24, 73, 110, 3, pc),
-      txt(24, 84, 200, 18, company, 12, tc, true),
-      txt(24, 108, 240, 16, email,  11, ac),
-      txt(24, 126, 240, 16, phone,  11, ac),
-      txt(24, 144, 240, 16, website, 11, ac),
-    ],
-    minimal: [
-      txt(24, 74, 128, 26, name,    18, tc, true),
-      txt(24, 102, 128, 18, title,  12, ac),
-      rect(162, 20, 2, 160, pc),
-      txt(176, 62, 156, 16, email,  11, tc),
-      txt(176, 80, 156, 16, phone,  11, tc),
-      txt(176, 98, 156, 16, website, 11, tc),
-      txt(176, 116, 156, 16, company, 11, ac),
-    ],
-    bold: [
-      rect(0, 0, 350, 76, pc),
-      txt(24, 14, 260, 30, name,    22, '#ffffff', true),
-      txt(24, 48, 220, 20, title,   13, '#ffffff'),
-      txt(24, 94, 220, 20, company, 13, tc, true),
-      txt(24, 118, 260, 16, email,  11, tc),
-      txt(24, 136, 260, 16, phone,  11, tc),
-      txt(24, 154, 260, 16, website, 11, tc),
-    ],
-    elegant: [
-      { id: mkId(), type: 'shape', shapeType: 'rect', x: 10, y: 10, width: 330, height: 180, fillColor: bg, strokeColor: pc, strokeWidth: 2 },
-      txt(80, 52, 190, 26, name,    20, tc),
-      rect(145, 82, 60, 1, pc),
-      txt(100, 90, 150, 18, title,  12, ac, false, true),
-      txt(100, 110, 150, 16, company, 12, tc),
-      txt(70, 138, 210, 14, email,  10, ac),
-      txt(70, 154, 210, 14, phone,  10, ac),
-    ],
-    tech: [
-      rect(314, 0, 36, 3, pc),
-      rect(347, 0, 3, 36, pc),
-      txt(24, 18, 260, 24, `> ${name}`,    18, pc, true),
-      txt(24, 44, 260, 18, `// ${title}`,  12, sc),
-      txt(24, 64, 220, 16, company,        12, ac),
-      txt(24, 92, 300, 16, `$ ${email}`,   11, tc),
-      txt(24, 110, 300, 16, `$ ${phone}`,  11, tc),
-      txt(24, 128, 300, 16, `$ ${website}`, 11, tc),
-    ],
-    creative: [
-      circle(250, -50, 150, 150, sc),
-      txt(24, 26, 240, 30, name,    22, tc, true),
-      txt(24, 58, 240, 20, title,   13, pc),
-      txt(24, 80, 220, 18, company, 12, ac),
-      txt(24, 110, 280, 16, email,  11, tc),
-      txt(24, 128, 280, 16, phone,  11, tc),
-      txt(24, 146, 280, 16, website, 11, tc),
-    ],
+  // Colors match BusinessCard.jsx exactly per template:
+  //   modern:   name=pc, title=ac, company=tc, contacts=tc
+  //   minimal:  name=pc, title=sc, company=tc, contacts=tc (right-aligned)
+  //   bold:     name=#fff (hardcoded in CSS .bold-gradient), title=pc, company=tc, contacts=tc
+  //   elegant:  name=pc, title=sc(italic), company=ac, contacts=tc (center-aligned)
+  //   tech:     name=pc, title=sc, company=ac, contacts=tc
+  //   creative: name=pc, title=sc, company=tc, contacts=tc
+
+  const modern = () => {
+    const els = [];
+    if (name)    els.push(txt(24, 20,  220, 28, name,    22, pc, true));
+    if (title)   els.push(txt(24, 50,  200, 18, title,   13, ac));
+    els.push(rect(24, 73, 110, 3, pc));
+    if (company) els.push(txt(24, 84,  200, 18, company, 12, tc, true));
+    if (email)   els.push(txt(24, 108, 240, 16, email,   11, tc));
+    if (phone)   els.push(txt(24, 126, 240, 16, phone,   11, tc));
+    if (website) els.push(txt(24, 144, 240, 16, website, 11, tc));
+    return els;
   };
 
-  return {
-    bgColor: bg,
-    bgColorBack: bg,
-    elements: layouts[templateId] || layouts.modern,
+  const minimal = () => {
+    const els = [];
+    if (name)    els.push(txt(24,  74, 128, 22, name,    18, pc, true));
+    if (title)   els.push(txt(24,  98, 128, 16, title,   12, sc));
+    if (company) els.push(txt(24, 116, 128, 16, company, 11, tc));
+    els.push(rect(162, 20, 2, 160, pc));
+    if (email)   els.push(txt(172,  62, 156, 16, email,   11, tc, false, false, 'right'));
+    if (phone)   els.push(txt(172,  80, 156, 16, phone,   11, tc, false, false, 'right'));
+    if (website) els.push(txt(172,  98, 156, 16, website, 11, tc, false, false, 'right'));
+    return els;
   };
+
+  const bold = () => {
+    const els = [];
+    // Gradient header background (primary→secondary; approximate with pc fill)
+    els.push(rect(0, 0, 350, 62, pc));
+    if (name)    els.push(txt(24,  16, 280, 28, name,    22, '#ffffff', true));
+    // Title/company/contacts are in bold-content BELOW the gradient header
+    if (title)   els.push(txt(24,  76, 260, 18, title,   13, pc, true));
+    if (company) els.push(txt(24,  96, 260, 16, company, 12, tc));
+    if (email)   els.push(txt(24, 118, 280, 14, email,   11, tc));
+    if (phone)   els.push(txt(24, 134, 280, 14, phone,   11, tc));
+    if (website) els.push(txt(24, 150, 280, 14, website, 11, tc));
+    return els;
+  };
+
+  const elegant = () => {
+    const els = [];
+    els.push({ id: mkId(), type: 'shape', shapeType: 'rect', x: 10, y: 10, width: 330, height: 180, fillColor: bg, strokeColor: pc, strokeWidth: 2 });
+    if (name)    els.push(txt(30,  52, 290, 24, name,    20, pc, false, false, 'center'));
+    els.push(rect(145, 80, 60, 1, pc));
+    if (title)   els.push(txt(30,  88, 290, 16, title,   12, sc, false, true, 'center'));
+    if (company) els.push(txt(30, 106, 290, 16, company, 12, ac, false, false, 'center'));
+    if (email)   els.push(txt(30, 130, 290, 13, email,   10, tc, false, false, 'center'));
+    if (phone)   els.push(txt(30, 145, 290, 13, phone,   10, tc, false, false, 'center'));
+    if (website) els.push(txt(30, 160, 290, 13, website, 10, tc, false, false, 'center'));
+    return els;
+  };
+
+  const tech = () => {
+    const els = [];
+    els.push(rect(314, 0, 36, 3, pc));
+    els.push(rect(347, 0, 3, 36, pc));
+    if (name)    els.push(txt(24,  18, 260, 24, `> ${name}`,    18, pc, true));
+    if (title)   els.push(txt(24,  44, 260, 18, `// ${title}`,  12, sc));
+    if (company) els.push(txt(24,  64, 220, 16, company,        12, ac));
+    if (email)   els.push(txt(24,  92, 300, 16, `$ ${email}`,   11, tc));
+    if (phone)   els.push(txt(24, 110, 300, 16, `$ ${phone}`,   11, tc));
+    if (website) els.push(txt(24, 128, 300, 16, `$ ${website}`, 11, tc));
+    return els;
+  };
+
+  const creative = () => {
+    const els = [];
+    els.push(circle(250, -50, 150, 150, sc));
+    if (name)    els.push(txt(24,  26, 240, 30, name,    22, pc, true));
+    if (title)   els.push(txt(24,  58, 240, 20, title,   13, sc));
+    if (company) els.push(txt(24,  80, 220, 16, company, 12, tc));
+    if (email)   els.push(txt(24, 110, 280, 16, email,   11, tc));
+    if (phone)   els.push(txt(24, 128, 280, 16, phone,   11, tc));
+    if (website) els.push(txt(24, 146, 280, 16, website, 11, tc));
+    return els;
+  };
+
+  const builders = { modern, minimal, bold, elegant, tech, creative };
+  const build = builders[templateId] || modern;
+
+  return { bgColor: bg, bgColorBack: bg, elements: build() };
 };
 
 // Convert template card back-side data (logo, QR, tagline) into canvas image/text elements.
