@@ -197,14 +197,19 @@ const buildTemplateElements = (templateId, cardData = {}) => {
 
   const elegant = () => {
     const els = [];
-    els.push({ id: mkId(), type: 'shape', shapeType: 'rect', x: 10, y: 10, width: 330, height: 180, fillColor: bg, strokeColor: pc, strokeWidth: 2 });
-    if (name)    els.push(txt(30,  52, 290, 24, name,    20, pc, false, false, 'center'));
-    els.push(rect(145, 80, 60, 1, pc));
-    if (title)   els.push(txt(30,  88, 290, 16, title,   12, sc, false, true, 'center'));
-    if (company) els.push(txt(30, 106, 290, 16, company, 12, ac, false, false, 'center'));
-    if (email)   els.push(txt(30, 130, 290, 13, email,   10, tc, false, false, 'center'));
-    if (phone)   els.push(txt(30, 145, 290, 13, phone,   10, tc, false, false, 'center'));
-    if (website) els.push(txt(30, 160, 290, 13, website, 10, tc, false, false, 'center'));
+    // Border rect matches CSS: card-elegant padding=12px, elegant-border border=2px → x=12,y=12,w=326,h=176
+    els.push({ id: mkId(), type: 'shape', shapeType: 'rect', x: 12, y: 12, width: 326, height: 176, fillColor: bg, strokeColor: pc, strokeWidth: 2 });
+    // Content is flex-column justify-center inside a 290×140 area starting at (30,30).
+    // Total stack height ≈137px → top offset ≈1.5px → content starts at y≈31.
+    if (name)    els.push(txt(30,  31, 290, 23, name,    20, pc, false, false, 'center'));
+    // elegant-line: CSS width=40px, centered in 290px box (x=155), margin 8px above+below name
+    els.push(rect(155, 62, 40, 1, pc));
+    if (title)   els.push(txt(30,  71, 290, 14, title,   12, sc, false, true,  'center'));
+    if (company) els.push(txt(30,  91, 290, 14, company, 12, ac, false, false, 'center'));
+    // elegant-contacts: font 0.65rem≈10px, line-height 1.3, margin 0.15rem each side ≈2.4px
+    if (email)   els.push(txt(30, 115, 290, 14, email,   10, tc, false, false, 'center'));
+    if (phone)   els.push(txt(30, 134, 290, 14, phone,   10, tc, false, false, 'center'));
+    if (website) els.push(txt(30, 152, 290, 14, website, 10, tc, false, false, 'center'));
     return els;
   };
 
