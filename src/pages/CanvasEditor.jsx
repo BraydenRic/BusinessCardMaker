@@ -244,7 +244,24 @@ const buildTemplateElements = (templateId, cardData = {}) => {
     return els;
   };
 
-  const builders = { modern, minimal, bold, elegant, tech, creative };
+  const signal = () => {
+    const els = [];
+    // Corner L-bracket (top-right) — two thin rects
+    els.push(rect(320, 14, 16, 2, pc));
+    els.push(rect(334, 14, 2, 16, pc));
+    if (name)  els.push(txt(24, 22, 280, 22, name, 18, tc, true));
+    const upperTitle = title ? title.toUpperCase() : null;
+    if (upperTitle) els.push(txt(24, 50, 240, 12, upperTitle, 10, pc, true));
+    // Thin accent line under title
+    els.push(rect(24, 68, 28, 1, pc));
+    // Contacts anchored to bottom
+    if (email)   els.push(txt(24, 129, 302, 16, email,   10, ac));
+    if (phone)   els.push(txt(24, 146, 302, 16, phone,   10, ac));
+    if (website) els.push(txt(24, 163, 302, 16, website, 10, pc));
+    return els;
+  };
+
+  const builders = { modern, minimal, bold, elegant, tech, creative, signal };
   const build = builders[templateId] || modern;
 
   return { bgColor: bg, bgColorBack: bg, elements: build() };
@@ -499,19 +516,22 @@ const CanvasEditor = () => {
     push(makeShape('divider', s.primaryColor));
     push(makeShape('line', s.primaryColor));
 
-    // Title
+    // Title — signal uses uppercase text to match CSS text-transform:uppercase
     const titleColor = templateParam === 'modern' ? s.accentColor : s.secondaryColor;
-    push(makeText('title', 'Your Title', titleColor, templateParam === 'bold', templateParam === 'elegant'));
+    const titlePlaceholder = templateParam === 'signal' ? 'YOUR TITLE' : 'Your Title';
+    push(makeText('title', titlePlaceholder, titleColor, templateParam === 'bold', templateParam === 'elegant'));
 
     // Company
     const companyColor = ['elegant', 'tech'].includes(templateParam) ? s.accentColor : s.textColor;
     push(makeText('company', 'Company Name', companyColor, templateParam === 'modern'));
 
-    // Contacts (tech gets $ prefix to match the BusinessCard rendering)
+    // Contacts — tech gets $ prefix; signal uses accentColor for email/phone, primaryColor for website
     const pre = templateParam === 'tech' ? '$ ' : '';
-    push(makeText('email',   `${pre}email@example.com`,    s.textColor));
-    push(makeText('phone',   `${pre}+1 (555) 123-4567`,   s.textColor));
-    push(makeText('website', `${pre}www.yourwebsite.com`,  s.textColor));
+    const contactColor = templateParam === 'signal' ? s.accentColor : s.textColor;
+    const websiteColor = templateParam === 'signal' ? s.primaryColor : s.textColor;
+    push(makeText('email',   `${pre}email@example.com`,    contactColor));
+    push(makeText('phone',   `${pre}+1 (555) 123-4567`,   contactColor));
+    push(makeText('website', `${pre}www.yourwebsite.com`,  websiteColor));
 
     hasInitializedRef.current = true;
     setBgColor(s.backgroundColor);

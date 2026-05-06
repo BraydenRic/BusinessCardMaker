@@ -84,6 +84,20 @@ export const templates = [
       fontFamily: "'Montserrat', sans-serif",
       layout: 'creative'
     }
+  },
+  {
+    id: 'signal',
+    name: 'Signal Pro',
+    preview: '/templates/signal-preview.png',
+    style: {
+      backgroundColor: '#0b1221',
+      primaryColor: '#06b6d4',
+      secondaryColor: '#22d3ee',
+      textColor: '#f0f9ff',
+      accentColor: '#64748b',
+      fontFamily: "'Inter', sans-serif",
+      layout: 'signal'
+    }
   }
 ];
 

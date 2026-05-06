@@ -308,6 +308,64 @@
   font-size: 0.75rem;
 }
 
+/* Signal Pro Layout */
+.card-signal {
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+  height: 200px;
+  overflow: hidden;
+}
+
+.card-signal .signal-corner {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 16px;
+  height: 16px;
+  border-top: 1.5px solid;
+  border-right: 1.5px solid;
+  border-radius: 0 3px 0 0;
+  opacity: 0.45;
+}
+
+.card-signal h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.18;
+}
+
+.card-signal .signal-title {
+  margin: 5px 0 0 0;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.card-signal .signal-line {
+  width: 28px;
+  height: 1px;
+  margin-top: 13px;
+  opacity: 0.4;
+  flex-shrink: 0;
+}
+
+.card-signal .signal-contacts {
+  margin-top: auto;
+  line-height: 1.65;
+}
+
+.card-signal .signal-contact {
+  margin: 0;
+  font-size: 0.62rem;
+}
+
 /* Print styles */
 @media print {
   .business-card-wrapper,
@@ -319,6 +377,7 @@
   .card-elegant,
   .card-tech,
   .card-creative,
+  .card-signal,
   .card-divider,
   .elegant-line,
   .bold-gradient,

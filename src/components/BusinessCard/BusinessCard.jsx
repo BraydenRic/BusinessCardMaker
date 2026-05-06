@@ -122,6 +122,22 @@ const BusinessCard = ({ data, templateId, scale = 1 }) => {
     </div>
   );
 
+  const renderSignalLayout = () => (
+    <div className="card-signal" style={cardStyle}>
+      <div data-canvas-field="corner" className="signal-corner" style={{ borderColor: style.primaryColor }} />
+      <h2 data-canvas-field="name" style={{ color: style.textColor }}>{data.name || 'Your Name'}</h2>
+      <p data-canvas-field="title" className="signal-title" style={{ color: style.primaryColor }}>
+        {data.title || 'Your Title'}
+      </p>
+      <div data-canvas-field="line" className="signal-line" style={{ backgroundColor: style.primaryColor }} />
+      <div className="signal-contacts">
+        {data.email && <p data-canvas-field="email" className="signal-contact" style={{ color: style.accentColor }}>{data.email}</p>}
+        {data.phone && <p data-canvas-field="phone" className="signal-contact" style={{ color: style.accentColor }}>{data.phone}</p>}
+        {data.website && <p data-canvas-field="website" className="signal-contact" style={{ color: style.primaryColor }}>{data.website}</p>}
+      </div>
+    </div>
+  );
+
   const renderLayout = () => {
     switch (style.layout) {
       case 'modern':
@@ -136,6 +152,8 @@ const BusinessCard = ({ data, templateId, scale = 1 }) => {
         return renderTechLayout();
       case 'creative':
         return renderCreativeLayout();
+      case 'signal':
+        return renderSignalLayout();
       default:
         return renderModernLayout();
     }
